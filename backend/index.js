@@ -1,55 +1,67 @@
-const express =require('express');
-const multer =require('multer');
-const docxTopdf= require('docx-pdf');
+const express = require('express');
+const multer = require('multer');
+const docxTopdf = require('docx-pdf');
 const path = require('path');
-
+const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
-const port =3001
-// setting up the file storage
+const port = 3001;
 
-const storage =multer.diskStorage({
-    destination: function(req, res , cb) {
-        cb(null ,"uploads");
+// Enable CORS for a specific origin
+app.use(cors({
+    origin: "http://localhost:3000",
+}));
+
+// Setting up the file storage
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'uploads');
     },
-    filename: function(req, res, cb) {
-        cb(null ,file.originalname );
-    },
+    filename: function(req, file, cb) {
+        cb(null, file.originalname);
+    }
 });
 
-const upload = multer({ dest: 'uploads/' })
+const upload = multer({ storage: storage });
 
-
-app.post('/convertfile', upload.single('file'), (req, res, next)=> {
+app.post('/convertfile', upload.single("file"), (req, res) => {
+    console.log(req.file);
     try {
-        if(!req.file){
+        if (!req.file) {
             return res.status(400).json({
-                message:"No file was uploaded"
+                message: "No file was uploaded"
             });
         }
-        let outputpath = path.join(__dirname, 'files',`${req.file.originalname}.pdf`)
-            docxTopdf(req.file.path,outputpath,(err,result)=>{
-            if(err){
-            console.log(err);
-            return res.status(500).json({
-                message:"error in converting Docx to Pdf file"
-            })
-            }
-            console.log('result'+result);
-            res.download(outputpath ,() =>{
-                console.log("file Downloaded")
-            })
-        });
+
+        const outputPath = path.join(__dirname, 'files', `${req.file.originalname}.pdf`);
         
+        // Ensure the output directory exists
+        const outputDir = path.join(__dirname, 'files');
+        if (!fs.existsSync(outputDir)){
+            fs.mkdirSync(outputDir);
+        }
+
+        docxTopdf(req.file.path, outputPath, (err, result) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({
+                    message: "Error in converting Docx to Pdf file"
+                });
+            }
+            console.log('result' + result);
+            res.download(outputPath, () => {
+                console.log("File downloaded");
+            });
+        });
     } catch (error) {
         console.log(error);
         res.status(500).json({
-            message:"Internal server error"
-        })
+            message: "Internal server error"
+        });
     }
-})
-  
+});
 
-app.listen(port, ()=>{
-    console.log(`listening on port ${port}`); 
+app.listen(port, () => {
+    console.log(`Listening on port ${port}`);
 });
