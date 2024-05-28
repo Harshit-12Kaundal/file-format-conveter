@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const docxTopdf = require('docx-pdf');
+const libre = require('libreoffice-convert');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
@@ -26,7 +27,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.post('/convertfile', upload.single("file"), (req, res) => {
-    console.log(req.file);
     try {
         if (!req.file) {
             return res.status(400).json({
