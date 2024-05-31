@@ -1,67 +1,69 @@
 const express = require('express');
 const multer = require('multer');
-const docxTopdf = require('docx-pdf');
 const libre = require('libreoffice-convert');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 
 const app = express();
-const port = 3001;
-
-// Enable CORS for a specific origin
+app.use(express.json());
 app.use(cors({
     origin: "http://localhost:3000",
 }));
 
-// Setting up the file storage
-const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, 'uploads');
-    },
-    filename: function(req, file, cb) {
-        cb(null, file.originalname);
-    }
-});
+const port = 3001;
+const upload = multer({ dest: 'uploads/' }); // Temporary storage for multer
 
-const upload = multer({ storage: storage });
+// Create directories for storing files if they don't exist
+const docxDir = path.join(__dirname, 'docx');
+const pdfDir = path.join(__dirname, 'pdf');
 
-app.post('/convertfile', upload.single("file"), (req, res) => {
+if (!fs.existsSync(docxDir)) fs.mkdirSync(docxDir, { recursive: true });
+if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
+
+// Route to handle file upload and conversion
+app.post('/convertfile', upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({
-                message: "No file was uploaded"
-            });
+        const file = req.file;
+        if (!file) {
+            return res.status(400).send('No file uploaded.');
         }
+        console.log(file);
+        const docxFilePath = path.join(docxDir, file.originalname+ path.extname(file.originalname));
+        console.log(docxFilePath);
+        const pdfFilePath = path.join(pdfDir, file.originalname + '.pdf');
+        console.log(pdfFilePath);
 
-        const outputPath = path.join(__dirname, 'files', `${req.file.originalname}.pdf`);
-        
-        // Ensure the output directory exists
-        const outputDir = path.join(__dirname, 'files');
-        if (!fs.existsSync(outputDir)){
-            fs.mkdirSync(outputDir);
-        }
+        // Move the file to the docx directory
+        fs.renameSync(file.path, docxFilePath);
 
-        docxTopdf(req.file.path, outputPath, (err, result) => {
+        const input = fs.readFileSync(docxFilePath);
+
+        libre.convert(input, '.pdf', undefined, (err, done) => {
             if (err) {
-                console.log(err);
-                return res.status(500).json({
-                    message: "Error in converting Docx to Pdf file"
-                });
+                console.error(`Error converting file: ${err}`);
+                return res.status(500).send('Failed to convert file.');
             }
-            console.log('result' + result);
-            res.download(outputPath, () => {
-                console.log("File downloaded");
+
+            fs.writeFileSync(pdfFilePath, done);
+
+            res.download(pdfFilePath, file.filename + '.pdf', (err) => {
+                if (err) {
+                    console.error(`Error downloading file: ${err}`);
+                    return res.status(500).send('Failed to download file.');
+                }
+
+                // Optionally, clean up the uploaded and converted files
+                fs.unlinkSync(docxFilePath);
+                fs.unlinkSync(pdfFilePath);
             });
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            message: "Internal server error"
-        });
+        console.error(`Unexpected error: ${error}`);
+        res.status(500).send('An unexpected error occurred.');
     }
 });
 
 app.listen(port, () => {
-    console.log(`Listening on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });

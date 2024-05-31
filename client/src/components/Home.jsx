@@ -22,15 +22,15 @@ const Home = () => {
         const formData = new FormData();
         formData.append("file", selectedFile);
 
-        for (const [key, value] of formData.entries()) {
-            console.log(key, value);
-        }
+        // for (const [key, value] of formData.entries()) {
+        //     console.log(key, value);
+        // }
 
         try {
             const response = await axios.post('http://localhost:3001/convertfile', formData, { responseType: "blob" });
             console.log(response.data);
             const url = window.URL.createObjectURL(new Blob([response.data]));
-            console.log(url);
+            // console.log(url);
             const link = document.createElement("a");
             link.href = url;
             link.setAttribute("download", selectedFile.name.replace(/\.[^/.]+$/, "") + ".pdf");
