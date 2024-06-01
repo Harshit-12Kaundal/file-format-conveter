@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FaFileWord } from "react-icons/fa";
 import axios from "axios";
 
@@ -8,9 +8,9 @@ const Home = () => {
     const [downloadError, setDownloadError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
-    const [downloadProgress, setDownloadProgress] = useState(0); // Track download progress
+    const fileInputRef = useRef(null);
 
-    const handleFileChange = (e) => { 
+    const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
     };
 
@@ -24,7 +24,6 @@ const Home = () => {
 
         setIsLoading(true);
         setUploadProgress(0); // Reset upload progress
-        setDownloadProgress(0); // Reset download progress
 
         const formData = new FormData();
         formData.append("file", selectedFile);
@@ -33,7 +32,7 @@ const Home = () => {
             const response = await axios.post('http://localhost:3001/convertfile', formData, {
                 responseType: "blob",
                 onUploadProgress: (progressEvent) => {
-                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    const progress = Math.round((progressEvent.loaded * 50) / progressEvent.total);
                     setUploadProgress(progress); // Update upload progress
                 }
             });
@@ -48,6 +47,9 @@ const Home = () => {
             setSelectedFile(null);
             setDownloadError("");
             setConvert("File converted and downloaded successfully");
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ""; // Clear the file input
+            }
         } catch (error) {
             console.error(error);
             setDownloadError("An error occurred while converting the file");
@@ -68,6 +70,7 @@ const Home = () => {
                         className="hidden" 
                         id="fileInput" 
                         onChange={handleFileChange}
+                        ref={fileInputRef} // Use ref to access the file input
                     />
                     <label 
                         htmlFor="fileInput" 
@@ -88,10 +91,6 @@ const Home = () => {
                                 <div className="bg-green-500 h-4 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                             </div>
                             <p className="text-center text-sm">Upload Progress: {uploadProgress}%</p>
-                            {/* <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
-                                <div className="bg-green-500 h-4 rounded-full" style={{ width: `${downloadProgress}%` }}></div>
-                            </div>
-                            <p className="text-center text-sm">Download Progress: {downloadProgress}%</p> */}
                         </div>
                     )}
                     {convert && <p className="text-green-500 mt-4">{convert}</p>}
