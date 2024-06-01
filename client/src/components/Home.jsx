@@ -6,31 +6,38 @@ const Home = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [convert, setConvert] = useState("");
     const [downloadError, setDownloadError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);  // Add loading state
+    const [isLoading, setIsLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
+    const [downloadProgress, setDownloadProgress] = useState(0); // Track download progress
 
     const handleFileChange = (e) => { 
         setSelectedFile(e.target.files[0]);
-        // console.log(e.target.files[0]);
     };
-    
-    console.log(selectedFile);
+
     const handleSubmit = async (e) => {
-        // e.preventDefault();
+        e.preventDefault();
 
         if (!selectedFile) {
             setConvert("Please select a file");
             return;
         }
 
-        // Set loading to true
         setIsLoading(true);
+        setUploadProgress(0); // Reset upload progress
+        setDownloadProgress(0); // Reset download progress
 
         const formData = new FormData();
         formData.append("file", selectedFile);
 
         try {
-            const response = await axios.post('http://localhost:3001/convertfile', formData, { responseType: "blob" });
-            console.log(response.data);
+            const response = await axios.post('http://localhost:3001/convertfile', formData, {
+                responseType: "blob",
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(progress); // Update upload progress
+                }
+            });
+
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement("a");
             link.href = url;
@@ -45,7 +52,6 @@ const Home = () => {
             console.error(error);
             setDownloadError("An error occurred while converting the file");
         } finally {
-            // Set loading to false
             setIsLoading(false);
         }
     };
@@ -71,14 +77,23 @@ const Home = () => {
                     </label>
                     <button 
                         onClick={handleSubmit} 
-                        disabled={!selectedFile || isLoading}  // Disable button when loading
+                        disabled={!selectedFile || isLoading}
                         className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
                     >
                         Convert File
                     </button>
-                    {isLoading && <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
-                        <div className="bg-green-500 h-4 rounded-full" style={{ width: '100%' }}></div>
-                    </div>}
+                    {isLoading && (
+                        <div className="w-full mt-4">
+                            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                                <div className="bg-green-500 h-4 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+                            </div>
+                            <p className="text-center text-sm">Upload Progress: {uploadProgress}%</p>
+                            {/* <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
+                                <div className="bg-green-500 h-4 rounded-full" style={{ width: `${downloadProgress}%` }}></div>
+                            </div>
+                            <p className="text-center text-sm">Download Progress: {downloadProgress}%</p> */}
+                        </div>
+                    )}
                     {convert && <p className="text-green-500 mt-4">{convert}</p>}
                     {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
                 </div>
