@@ -6,31 +6,32 @@ const Home = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [convert, setConvert] = useState("");
     const [downloadError, setDownloadError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);  // Add loading state
 
     const handleFileChange = (e) => { 
         setSelectedFile(e.target.files[0]);
+        // console.log(e.target.files[0]);
     };
-
+    
+    console.log(selectedFile);
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        // e.preventDefault();
 
         if (!selectedFile) {
             setConvert("Please select a file");
             return;
         }
-        //  formData variable is written in the specific way in camelcase format
+
+        // Set loading to true
+        setIsLoading(true);
+
         const formData = new FormData();
         formData.append("file", selectedFile);
-
-        // for (const [key, value] of formData.entries()) {
-        //     console.log(key, value);
-        // }
 
         try {
             const response = await axios.post('http://localhost:3001/convertfile', formData, { responseType: "blob" });
             console.log(response.data);
             const url = window.URL.createObjectURL(new Blob([response.data]));
-            // console.log(url);
             const link = document.createElement("a");
             link.href = url;
             link.setAttribute("download", selectedFile.name.replace(/\.[^/.]+$/, "") + ".pdf");
@@ -43,6 +44,9 @@ const Home = () => {
         } catch (error) {
             console.error(error);
             setDownloadError("An error occurred while converting the file");
+        } finally {
+            // Set loading to false
+            setIsLoading(false);
         }
     };
 
@@ -67,11 +71,14 @@ const Home = () => {
                     </label>
                     <button 
                         onClick={handleSubmit} 
-                        disabled={!selectedFile} 
+                        disabled={!selectedFile || isLoading}  // Disable button when loading
                         className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
                     >
                         Convert File
                     </button>
+                    {isLoading && <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
+                        <div className="bg-green-500 h-4 rounded-full" style={{ width: '100%' }}></div>
+                    </div>}
                     {convert && <p className="text-green-500 mt-4">{convert}</p>}
                     {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
                 </div>
