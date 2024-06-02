@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { FaFileWord, FaFilePdf } from "react-icons/fa";
 import axios from "axios";
+import { useParams } from 'react-router-dom';
 
 const Home = () => {
+    const { id } = useParams();
+    console.log(id);
     const [selectedFile, setSelectedFile] = useState(null);
-    const [conversionType, setConversionType] = useState("docx-to-pdf");
     const [convertMessage, setConvertMessage] = useState("");
     const [downloadError, setDownloadError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -13,10 +15,6 @@ const Home = () => {
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
-    };
-
-    const handleConversionTypeChange = (e) => {
-        setConversionType(e.target.value);
     };
 
     const handleSubmit = async (e) => {
@@ -32,7 +30,7 @@ const Home = () => {
 
         const formData = new FormData();
         formData.append("file", selectedFile);
-        formData.append("conversionType", conversionType);
+        formData.append("id", id);
 
         try {
             const response = await axios.post('http://localhost:3001/convertfile', formData, {
@@ -43,7 +41,7 @@ const Home = () => {
                 }
             });
 
-            const fileExtension = conversionType === "docx-to-pdf" ? ".pdf" : ".docx";
+            const fileExtension = id === "docx-to-pdf" ? ".pdf" : ".docx";
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement("a");
             link.href = url;
@@ -66,54 +64,45 @@ const Home = () => {
     };
 
     return (
-        <>
-            <div className="max-w-screen-full mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
-                <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-md">
-                    <h1 className="text-3xl font-bold text-center mb-4">Convert Files Online</h1>
-                    <p className="text-sm text-center mb-5">Easily convert your files between DOCX and PDF formats for free</p>
-                    <select
-                        value={conversionType}
-                        onChange={handleConversionTypeChange}
-                        className="px-4 py-2 mb-4 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer"
-                    >
-                        <option value="docx-to-pdf">DOCX to PDF</option>
-                        <option value="pdf-to-docx">PDF to DOCX</option>
-                    </select>
-                    <input
-                        type="file"
-                        accept={conversionType === "docx-to-pdf" ? ".doc, .docx" : ".pdf"}
-                        className="hidden"
-                        id="fileInput"
-                        onChange={handleFileChange}
-                        ref={fileInputRef}
-                    />
-                    <label
-                        htmlFor="fileInput"
-                        className="w-full flex items-center justify-center px-4 py-6 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
-                    >
-                        {conversionType === "docx-to-pdf" ? <FaFileWord className="mr-2" /> : <FaFilePdf className="mr-2" />}
-                        <span className="text-xl">{selectedFile ? selectedFile.name : "Choose File"}</span>
-                    </label>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={!selectedFile || isLoading}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
-                    >
-                        Convert File
-                    </button>
-                    {isLoading && (
-                        <div className="w-full mt-4">
-                            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                                <div className="bg-green-500 h-4 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
-                            </div>
-                            <p className="text-center text-sm">Upload Progress: {uploadProgress}%</p>
+        <div className="max-w-screen-full mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
+            <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-md">
+                <h1 className="text-3xl font-bold text-center mb-4">Convert Files Online</h1>
+                <p className="text-sm text-center mb-5">Easily convert your files between
+                {id==='docx-to-pdf'?<span> DOCX to PDF</span>:<span> PDF to DOCX</span>} format for free</p>
+                <input
+                    type="file"
+                    accept={id === "docx-to-pdf" ? ".doc, .docx" : ".pdf"}
+                    className="hidden"
+                    id="fileInput"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                />
+                <label
+                    htmlFor="fileInput"
+                    className="w-full flex items-center justify-center px-4 py-6 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
+                >
+                    {id === "docx-to-pdf" ? <FaFileWord className="mr-2" /> : <FaFilePdf className="mr-2" />}
+                    <span className="text-xl">{selectedFile ? selectedFile.name : "Choose File"}</span>
+                </label>
+                <button
+                    onClick={handleSubmit}
+                    disabled={!selectedFile || isLoading}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
+                >
+                    Convert File
+                </button>
+                {isLoading && (
+                    <div className="w-full mt-4">
+                        <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                            <div className="bg-green-500 h-4 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                         </div>
-                    )}
-                    {convertMessage && <p className="text-green-500 mt-4">{convertMessage}</p>}
-                    {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
-                </div>
+                        <p className="text-center text-sm">Upload Progress: {uploadProgress}%</p>
+                    </div>
+                )}
+                {convertMessage && <p className="text-green-500 mt-4">{convertMessage}</p>}
+                {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
             </div>
-        </>
+        </div>
     );
 };
 
