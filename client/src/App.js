@@ -12,7 +12,7 @@ function App() {
         <header>
           <Navbar />
         </header>
-        <div className='pb-80 mb-96'>
+        <div className='h-screen pt-56'>
           <Routes>
             <Route path="/" element={<Main/>}/>
             <Route path="/convert/:id" element={<Home/>}/>

@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom';
 
 const Home = () => {
     const { id } = useParams();
-    console.log(id);
     const [selectedFile, setSelectedFile] = useState(null);
     const [convertMessage, setConvertMessage] = useState("");
     const [downloadError, setDownloadError] = useState("");
@@ -32,11 +31,14 @@ const Home = () => {
         formData.append("file", selectedFile);
         formData.append("id", id);
 
+        for (const [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
         try {
             const response = await axios.post('http://localhost:3001/convertfile', formData, {
                 responseType: "blob",
                 onUploadProgress: (progressEvent) => {
-                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    const progress = Math.round((progressEvent.loaded * 50) / progressEvent.total);
                     setUploadProgress(progress);
                 }
             });

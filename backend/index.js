@@ -21,42 +21,61 @@ const pdfDir = path.join(__dirname, 'pdf');
 if (!fs.existsSync(docxDir)) fs.mkdirSync(docxDir, { recursive: true });
 if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
+const convertFile = async (inputPath, outputPath, format) => {
+    const input = fs.readFileSync(inputPath);
+    return new Promise((resolve, reject) => {
+        libre.convert(input, format, undefined, (err, done) => {
+            if (err) {
+                return reject(err);
+            }
+            fs.writeFileSync(outputPath, done);
+            resolve();
+        });
+    });
+};
+
 // Route to handle file upload and conversion
 app.post('/convertfile', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
+        const id = req.body.id;
+        console.log(file);
+        console.log(id);
+
         if (!file) {
             return res.status(400).send('No file uploaded.');
         }
-        console.log(file);
-        const docxFilePath = path.join(docxDir, file.originalname+ path.extname(file.originalname));
-        console.log(docxFilePath);
-        const pdfFilePath = path.join(pdfDir, file.originalname + '.pdf');
-        console.log(pdfFilePath);
+        const inputFilePath = req.file.path;// Use directly
+        console.log(inputFilePath);
+        let outputFilePath;
+        let outputFormat;
+        let convertedFileName;
 
-        // Move the file to the docx directory
-        fs.renameSync(file.path, docxFilePath);
+        if (id === 'docx-to-pdf') {
+            // Conversion from DOCX to PDF
+            outputFilePath = path.join(pdfDir, file.filename + '.pdf');
+            outputFormat = 'pdf';
+            convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.pdf';
+        } else if (id === 'pdf-to-docx') {
+            // Conversion from PDF to DOCX
+            outputFilePath = path.join(docxDir, file.filename + '.docx');
+            outputFormat = 'docx';
+            convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.docx';
+        } else {
+            return res.status(400).send('Invalid conversion type.');
+        }
 
-        const input = fs.readFileSync(docxFilePath);
+        await convertFile(inputFilePath, outputFilePath, outputFormat);
 
-        libre.convert(input, '.pdf', undefined, (err, done) => {
+        res.download(outputFilePath, convertedFileName, (err) => {
             if (err) {
-                console.error(`Error converting file: ${err}`);
-                return res.status(500).send('Failed to convert file.');
+                console.error(`Error downloading file: ${err}`);
+                return res.status(500).send('Failed to download file.');
             }
 
-            fs.writeFileSync(pdfFilePath, done);
-
-            res.download(pdfFilePath, file.filename + '.pdf', (err) => {
-                if (err) {
-                    console.error(`Error downloading file: ${err}`);
-                    return res.status(500).send('Failed to download file.');
-                }
-
-                // Optionally, clean up the uploaded and converted files
-                fs.unlinkSync(docxFilePath);
-                fs.unlinkSync(pdfFilePath);
-            });
+            // Cleanup uploaded and converted files
+            fs.unlinkSync(inputFilePath);
+            fs.unlinkSync(outputFilePath);
         });
     } catch (error) {
         console.error(`Unexpected error: ${error}`);
