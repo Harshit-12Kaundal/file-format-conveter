@@ -5,7 +5,6 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const { exec } = require('child_process');
-const { Console } = require('console');
 
 const app = express();
 app.use(express.json());
@@ -14,7 +13,7 @@ app.use(cors({
 }));
 
 const port = 3001;
-const upload = multer({ dest: 'uploads/' }); // Temporary storage for multer
+const upload = multer({ dest: 'uploads/' });
 
 // Create directories for storing files if they don't exist
 const docxDir = path.join(__dirname, 'docx');
@@ -39,21 +38,17 @@ const convertWithLibreOffice = async (inputPath, outputPath, format) => {
 const convertWithPython = async (inputPath, outputPath) => {
     return new Promise((resolve, reject) => {
         const pythonScriptPath = path.join(__dirname, 'convert.py');
-        console.log(pythonScriptPath);
+        console.log(`Executing Python script: ${pythonScriptPath}`);
         const command = `python ${pythonScriptPath} "${inputPath}" "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
-            console.log(stdout);  // Log the standard output from the Python script
+            if (stdout) console.log(`stdout: ${stdout}`);
+            if (stderr) console.error(`stderr: ${stderr}`);
+
             if (error) {
                 console.error(`exec error: ${error}`);
                 return reject(error);
             }
-
-            if (stderr) {
-                console.error(`stderr: ${stderr}`);
-                return reject(stderr);
-            }
-
             resolve();
         });
     });
@@ -87,15 +82,27 @@ app.post('/convertfile', upload.single('file'), async (req, res) => {
             return res.status(400).send('Invalid conversion type.');
         }
 
+        if (!fs.existsSync(outputFilePath)) {
+            console.error(`Output file does not exist: ${outputFilePath}`);
+            return res.status(500).send('Conversion failed.');
+        }
+
         res.download(outputFilePath, convertedFileName, (err) => {
             if (err) {
                 console.error(`Error downloading file: ${err}`);
                 return res.status(500).send('Failed to download file.');
             }
 
+            console.log(`File downloaded successfully: ${outputFilePath}`);
+
             // Cleanup uploaded and converted files
-            fs.unlinkSync(inputFilePath);
-            fs.unlinkSync(outputFilePath);
+            try {
+                fs.unlinkSync(inputFilePath);
+                fs.unlinkSync(outputFilePath);
+                console.log(`Cleaned up files: ${inputFilePath}, ${outputFilePath}`);
+            } catch (cleanupError) {
+                console.error(`Error cleaning up files: ${cleanupError}`);
+            }
         });
     } catch (error) {
         console.error(`Unexpected error: ${error}`);
