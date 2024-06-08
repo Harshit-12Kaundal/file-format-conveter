@@ -4,6 +4,8 @@ const libre = require('libreoffice-convert');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const { exec } = require('child_process');
+const { Console } = require('console');
 
 const app = express();
 app.use(express.json());
@@ -21,7 +23,7 @@ const pdfDir = path.join(__dirname, 'pdf');
 if (!fs.existsSync(docxDir)) fs.mkdirSync(docxDir, { recursive: true });
 if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
-const convertFile = async (inputPath, outputPath, format) => {
+const convertWithLibreOffice = async (inputPath, outputPath, format) => {
     const input = fs.readFileSync(inputPath);
     return new Promise((resolve, reject) => {
         libre.convert(input, format, undefined, (err, done) => {
@@ -34,38 +36,56 @@ const convertFile = async (inputPath, outputPath, format) => {
     });
 };
 
+const convertWithPython = async (inputPath, outputPath) => {
+    return new Promise((resolve, reject) => {
+        const pythonScriptPath = path.join(__dirname, 'convert.py');
+        console.log(pythonScriptPath);
+        const command = `python ${pythonScriptPath} "${inputPath}" "${outputPath}"`;
+
+        exec(command, (error, stdout, stderr) => {
+            console.log(stdout);  // Log the standard output from the Python script
+            if (error) {
+                console.error(`exec error: ${error}`);
+                return reject(error);
+            }
+
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return reject(stderr);
+            }
+
+            resolve();
+        });
+    });
+};
+
 // Route to handle file upload and conversion
 app.post('/convertfile', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         const id = req.body.id;
-        console.log(file);
-        console.log(id);
 
         if (!file) {
             return res.status(400).send('No file uploaded.');
         }
-        const inputFilePath = req.file.path;// Use directly
-        console.log(inputFilePath);
+
+        const inputFilePath = req.file.path;
         let outputFilePath;
-        let outputFormat;
         let convertedFileName;
 
         if (id === 'docx-to-pdf') {
             // Conversion from DOCX to PDF
             outputFilePath = path.join(pdfDir, file.filename + '.pdf');
-            outputFormat = 'pdf';
             convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.pdf';
+            await convertWithLibreOffice(inputFilePath, outputFilePath, 'pdf');
         } else if (id === 'pdf-to-docx') {
             // Conversion from PDF to DOCX
             outputFilePath = path.join(docxDir, file.filename + '.docx');
-            outputFormat = 'docx';
             convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.docx';
+            await convertWithPython(inputFilePath, outputFilePath);
         } else {
             return res.status(400).send('Invalid conversion type.');
         }
-
-        await convertFile(inputFilePath, outputFilePath, outputFormat);
 
         res.download(outputFilePath, convertedFileName, (err) => {
             if (err) {

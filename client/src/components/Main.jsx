@@ -13,8 +13,8 @@ const Main = () => {
       <div className="flex flex-wrap gap-4">  {/* Added flex and flex-wrap classes */}
         {conversions.map(conversion => (
           <Link to={`/convert/${conversion.id}`} key={conversion.id} className="block">
-            <div className="p-8 bg-white shadow-md rounded-lg hover:shadow-xl transition-shadow h-64 hover:bg-green-500">
-              <h3 className="py-24 text-lg font-semibold">{conversion.title}</h3>
+            <div className="w-52 p-12 bg-white shadow-md rounded-lg hover:shadow-xl transition-shadow h-64 hover:bg-green-500">
+              <h3 className="text-lg font-semibold">{conversion.title}</h3>
             </div>
           </Link>
         ))}
