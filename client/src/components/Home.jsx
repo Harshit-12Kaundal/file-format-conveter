@@ -69,8 +69,12 @@ const Home = () => {
         <div className="max-w-screen-full mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
             <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-md">
                 <h1 className="text-3xl font-bold text-center mb-4">Convert Files Online</h1>
-                <p className="text-sm text-center mb-5">Easily convert your files between
-                {id==='docx-to-pdf'?<span> DOCX to PDF</span>:<span> PDF to DOCX</span>} format for free</p>
+                <div className="flex items-center justify-center mb-4">
+                    {id === "docx-to-pdf" ? <FaFileWord size={48} className="text-blue-500 mr-4" /> : <FaFilePdf size={48} className="text-red-500 mr-4" />}
+                    <p className="text-sm text-center">Easily convert your files between
+                        {id === 'docx-to-pdf' ? <span> DOCX to PDF</span> : <span> PDF to DOCX</span>} format for free
+                    </p>
+                </div>
                 <input
                     type="file"
                     accept={id === "docx-to-pdf" ? ".doc, .docx" : ".pdf"}
