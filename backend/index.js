@@ -33,7 +33,7 @@ const convertWithLibreOffice = async (inputPath, outputPath, format) => {
             fs.writeFileSync(outputPath, done);
             resolve();
         });
-    });
+    })
 };
 
 const convertWithPython = async (inputPath, outputPath) => {
