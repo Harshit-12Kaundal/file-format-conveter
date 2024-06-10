@@ -10,7 +10,7 @@ require('dotenv').config(); // Load environment variables
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://file-format-conveter.vercel.app',
+    origin: 'https://file-format-conveter.vercel.app/',
     credentials: true,
 }));
 
@@ -56,6 +56,10 @@ const convertWithPython = async (inputPath, outputPath) => {
     });
 };
 
+
+app.get('/', (req, res) => {
+    res.status(200).json({"message":"hello"});
+})
 // Route to handle file upload and conversion
 app.post('/convertfile', upload.single('file'), async (req, res) => {
     try {
