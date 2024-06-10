@@ -5,14 +5,15 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const { exec } = require('child_process');
+require('dotenv').config(); // Load environment variables
 
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
 }));
 
-const port = 3001;
+const port = process.env.PORT || 3001;
 const upload = multer({ dest: 'uploads/' });
 
 // Create directories for storing files if they don't exist
