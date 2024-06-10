@@ -10,7 +10,7 @@ require('dotenv').config(); // Load environment variables
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://file-format-conveter.vercel.app/',
+    origin: 'https://file-format-conveter.vercel.app',
     credentials: true,
 }));
 
