@@ -11,7 +11,9 @@ const app = express();
 app.use(express.json());
 app.use(cors({
     origin: [process.env.CORS_ORIGIN_DEV, process.env.CORS_ORIGIN_PROD],
-}));
+    credentials: true,
+}))
+
 
 const port = process.env.PORT || 3001;
 const upload = multer({ dest: 'uploads/' });
