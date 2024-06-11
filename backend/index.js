@@ -29,6 +29,7 @@ const convertWithLibreOffice = async (inputPath, outputPath, format) => {
     return new Promise((resolve, reject) => {
         libre.convert(input, format, undefined, (err, done) => {
             if (err) {
+                console.error('LibreOffice conversion error:', err);
                 return reject(err);
             }
             fs.writeFileSync(outputPath, done);
@@ -41,7 +42,7 @@ const convertWithPython = async (inputPath, outputPath) => {
     return new Promise((resolve, reject) => {
         const pythonScriptPath = path.join(__dirname, 'convert.py');
         console.log(`Executing Python script: ${pythonScriptPath}`);
-        const command = `python ${pythonScriptPath} "${inputPath}" "${outputPath}"`;
+        const command = `python3 ${pythonScriptPath} "${inputPath}" "${outputPath}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (stdout) console.log(`stdout: ${stdout}`);
@@ -56,10 +57,10 @@ const convertWithPython = async (inputPath, outputPath) => {
     });
 };
 
-
 app.get('/', (req, res) => {
     res.status(200).json({"message":"hello"});
-})
+});
+
 // Route to handle file upload and conversion
 app.post('/convertfile', upload.single('file'), async (req, res) => {
     try {
