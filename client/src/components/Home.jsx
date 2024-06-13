@@ -35,7 +35,7 @@ const Home = () => {
             console.log(`${key}: ${value}`);
         }
         try {
-            const response = await axios.post('https://file-format-conveter-1.onrender.com/convertfile', formData, {
+            const response = await axios.post('https://file-format-conveter-2.onrender.com/convertfile', formData, {
                 responseType: "blob",
                 onUploadProgress: (progressEvent) => {
                     const progress = Math.round((progressEvent.loaded * 50) / progressEvent.total);
