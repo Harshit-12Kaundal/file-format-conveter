@@ -1,13 +1,20 @@
 # Use an official Node.js runtime as the base image
 FROM node:20
 
-# Install LibreOffice
-RUN apt-get update && apt-get install -y libreoffice
+# Install system dependencies: LibreOffice and Python
+RUN apt-get update && \
+    apt-get install -y libreoffice python3-pip python3-venv && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Python and pdf2docx
-RUN apt-get install -y python3-pip && pip3 install pdf2docx
+# Create a virtual environment for Python and install pdf2docx
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install pdf2docx
 
-# Create and set the working directory
+# Ensure the virtual environment binaries are in PATH
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set the working directory
 WORKDIR /app
 
 # Copy package.json and package-lock.json
