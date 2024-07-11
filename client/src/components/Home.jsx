@@ -29,16 +29,14 @@ const Home = () => {
 
         const formData = new FormData();
         formData.append("file", selectedFile);
-        formData.append("id", id);
 
-        for (const [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
+        const endpoint = id === 'docx-to-pdf' ? 'http://localhost:3001/convertfile/docx/to-pdf' : 'http://localhost:3001/convertfile/pdf/to-docx';
+
         try {
-            const response = await axios.post('https://file-format-conveter-2.onrender.com/convertfile', formData, {
+            const response = await axios.post('http://localhost:3001/convertfile/docx/to-pdf' , formData, {
                 responseType: "blob",
                 onUploadProgress: (progressEvent) => {
-                    const progress = Math.round((progressEvent.loaded * 50) / progressEvent.total);
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     setUploadProgress(progress);
                 }
             });
