@@ -17,7 +17,9 @@ exports.convertPdfToDocx = async (req, res) => {
         }
 
         const inputFilePath = file.path;
+        console.log(inputFilePath)
         const outputFilePath = path.join(docxDir, file.filename + '.docx');
+        console.log(outputFilePath);
         const convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.docx';
 
         await convertWithPython(inputFilePath, outputFilePath);
