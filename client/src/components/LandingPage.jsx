@@ -2,7 +2,8 @@ import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { Link } from 'react-router-dom';
-import Home from './Home';
+import Card from './cardsdata/Cards'; // Importing the correct Card component
+import conversions from './cardsdata/CardConversions';
 
 const LandingPage = () => {
   return (
@@ -23,7 +24,11 @@ const LandingPage = () => {
         
         <div className="flex-grow">
           <h3 className="text-2xl font-semibold mb-4">Most Popular PDF Tools</h3>
-          <Home />
+          <div className="flex flex-wrap gap-4 justify-center">
+            {conversions.map(conversion => (
+              <Card key={conversion.id} conversion={conversion} />
+            ))}
+          </div>
         </div>
 
         <div className="flex-grow mt-8 mb-16">
