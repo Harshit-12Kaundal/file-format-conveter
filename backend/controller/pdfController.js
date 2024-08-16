@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { PDFDocument } = require('pdf-lib');
 const { convertWithPython } = require('../conversionFunction');
 
 const docxDir = path.join(__dirname, '../converted/docx');
@@ -48,5 +49,42 @@ exports.convertPdfToDocx = async (req, res) => {
     } catch (error) {
         console.error(`Unexpected error: ${error}`);
         res.status(500).send('An unexpected error occurred.');
+    }
+};
+
+
+exports.mergePdf= async(req,res)=>{
+    try {
+        const file1Path = req.files['file1'][0].path;
+        const file2Path = req.files['file2'][0].path;
+
+        const file1Buffer = fs.readFileSync(file1Path);
+        const file2Buffer = fs.readFileSync(file2Path);
+
+        const pdfDoc1 = await PDFDocument.load(file1Buffer);
+        const pdfDoc2 = await PDFDocument.load(file2Buffer);
+
+        const mergedPdf = await PDFDocument.create();
+        const copiedPages1 = await mergedPdf.copyPages(pdfDoc1, pdfDoc1.getPageIndices());
+        copiedPages1.forEach((page) => mergedPdf.addPage(page));
+
+        const copiedPages2 = await mergedPdf.copyPages(pdfDoc2, pdfDoc2.getPageIndices());
+        copiedPages2.forEach((page) => mergedPdf.addPage(page));
+
+        const mergedPdfBytes = await mergedPdf.save();
+        
+        // Send the merged PDF as a response
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="merged.pdf"',
+        });
+        res.send(Buffer.from(mergedPdfBytes));
+
+        // Clean up the uploaded files
+        fs.unlinkSync(file1Path);
+        fs.unlinkSync(file2Path);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Failed to merge PDFs');
     }
 };

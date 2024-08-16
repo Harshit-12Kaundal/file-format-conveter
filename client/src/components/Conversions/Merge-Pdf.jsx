@@ -1,47 +1,50 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { FaFilePdf } from 'react-icons/fa';
+import { FaFilePdf, FaPlusCircle } from 'react-icons/fa';
 
-const PdfMerger = () => {
-    const [selectedFile1, setSelectedFile1] = useState(null);
-    const [selectedFile2, setSelectedFile2] = useState(null);
+const MergePdf = () => {
+    const [selectedFiles, setSelectedFiles] = useState([]);
     const [mergeMessage, setMergeMessage] = useState('');
-    const [downloadError, setDownloadError] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const fileInputRef1 = useRef(null);
-    const fileInputRef2 = useRef(null);
 
-    const handleFileChange1 = (e) => {
-        setSelectedFile1(e.target.files[0]);
+    const handleFileChange = (e) => {
+        setSelectedFiles([...selectedFiles, ...e.target.files]);
     };
 
-    const handleFileChange2 = (e) => {
-        setSelectedFile2(e.target.files[0]);
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        setSelectedFiles([...selectedFiles, ...e.dataTransfer.files]);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!selectedFile1 || !selectedFile2) {
-            setMergeMessage('Please select two PDF files');
+        if (selectedFiles.length < 2) {
+            setMergeMessage('Please select at least two PDF files');
             return;
         }
 
         setIsLoading(true);
-        setUploadProgress(0);
 
         const formData = new FormData();
-        formData.append('file1', selectedFile1);
-        formData.append('file2', selectedFile2);
+        selectedFiles.forEach((file, index) => {
+            formData.append(`file${index + 1}`, file);
+        });
 
         try {
-            const response = await axios.post('http://localhost:3001/mergepdfs', formData, {
+            const response = await axios.post('http://localhost:3001/convertfile/pdf/to-merge', formData, {
                 responseType: 'blob',
-                onUploadProgress: (progressEvent) => {
-                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    setUploadProgress(progress);
-                }
             });
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -51,82 +54,97 @@ const PdfMerger = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            setSelectedFile1(null);
-            setSelectedFile2(null);
-            setDownloadError('');
+
             setMergeMessage('Files merged and downloaded successfully');
-            if (fileInputRef1.current) {
-                fileInputRef1.current.value = '';
-            }
-            if (fileInputRef2.current) {
-                fileInputRef2.current.value = '';
-            }
+            setSelectedFiles([]);
         } catch (error) {
             console.error(error);
-            setDownloadError('An error occurred while merging the files');
+            setMergeMessage('An error occurred while merging the files');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="max-w-screen-full mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
-            <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-4">Merge PDF Files</h1>
+        <div className="max-w-screen-lg mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
+            <div
+                className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-violet-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl ${
+                    isDragging ? 'bg-violet-100' : 'bg-white'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+            >
+                <h1 className="text-3xl font-bold text-center mb-4">Merge PDF</h1>
                 <div className="flex items-center justify-center mb-4">
-                    <FaFilePdf size={48} className="text-red-500 mr-4" />
-                    <p className="text-sm text-center">Merge two PDF files into one</p>
+                    <FaFilePdf size={48} className="text-violet-500 mr-4" />
+                    <p className="text-sm text-center">Combine your PDF files into one document easily</p>
                 </div>
+
+                {/* Main File Input */}
+                {selectedFiles.length === 0 && (
+                    <label
+                        htmlFor="fileInput"
+                        className="w-full flex items-center justify-center px-4 py-6 bg-violet-100 text-violet-700 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-violet-700 hover:text-white duration-300"
+                    >
+                        <FaPlusCircle size={24} className="mr-2" />
+                        <span className="text-xl">Choose Files or Drag & Drop Here</span>
+                    </label>
+                )}
                 <input
                     type="file"
                     accept=".pdf"
                     className="hidden"
-                    id="fileInput1"
-                    onChange={handleFileChange1}
-                    ref={fileInputRef1}
+                    id="fileInput"
+                    multiple
+                    onChange={handleFileChange}
                 />
-                <label
-                    htmlFor="fileInput1"
-                    className="w-full flex items-center justify-center px-1 py-3 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
-                >
-                    <FaFilePdf size={48} className="text-red-500 mr-4" />
-                    <span className="text-xl">{selectedFile1 ? selectedFile1.name : 'Choose First File'}</span>
-                </label>
-                <input
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    id="fileInput2"
-                    onChange={handleFileChange2}
-                    ref={fileInputRef2}
-                />
-                <label
-                    htmlFor="fileInput2"
-                    className="w-full flex items-center justify-center px-1 py-3 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
-                >
-                    <FaFilePdf size={48} className="text-red-500 mr-4" />
-                    <span className="text-xl">{selectedFile2 ? selectedFile2.name : 'Choose Second File'}</span>
-                </label>
+
+                {/* If only one file is selected, show the "+" button to add more */}
+                {selectedFiles.length === 1 && (
+                    <label
+                        htmlFor="fileInput"
+                        className="flex items-center justify-center mt-4 cursor-pointer text-violet-500 hover:text-violet-700 duration-300"
+                    >
+                        <FaPlusCircle size={24} className="mr-2" />
+                        <span>Add another file</span>
+                    </label>
+                )}
+
+                {/* Display the selected files in a box with hover effect */}
+                {selectedFiles.length > 0 && (
+                    <div className="mt-4 w-full">
+                        <p className="text-center text-lg mb-2">File(s) selected</p>
+                        <div className="border border-gray-300 rounded-lg p-4 hover:border-violet-400 hover:bg-violet-500 transition duration-300">
+                            {selectedFiles.map((file, index) => (
+                                <p key={index} className="text-center text-lg font-medium text-gray-800">
+                                    {file.name}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <button
                     onClick={handleSubmit}
-                    disabled={!selectedFile1 || !selectedFile2 || isLoading}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
+                    disabled={selectedFiles.length < 2 || isLoading}
+                    className="px-4 py-2 bg-violet-500 text-white rounded-lg shadow-lg hover:bg-violet-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none mt-4"
                 >
                     Merge Files
                 </button>
                 {isLoading && (
                     <div className="w-full mt-4">
-                        <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                            <div className="bg-green-500 h-4 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
-                        </div>
-                        <p className="text-center text-sm">Upload Progress: {uploadProgress}%</p>
+                        <p className="text-center text-sm">Merging files...</p>
                     </div>
                 )}
-                {mergeMessage && <p className="text-green-500 mt-4">{mergeMessage}</p>}
-                {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
+                {mergeMessage && (
+                    <p className={`mt-4 ${mergeMessage.includes('error') ? 'text-red-500' : 'text-green-500'}`}>
+                        {mergeMessage}
+                    </p>
+                )}
             </div>
         </div>
     );
 };
 
-export default PdfMerger;
+export default MergePdf;
