@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { FaFilePdf, FaPlusCircle } from 'react-icons/fa';
+import Navbar from '../Navbar';
 
 const MergePdf = () => {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -66,6 +67,8 @@ const MergePdf = () => {
     };
 
     return (
+        <div>
+        <Navbar/>
         <div className="max-w-screen-lg mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
             <div
                 className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-violet-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl ${
@@ -74,7 +77,7 @@ const MergePdf = () => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-            >
+                >
                 <h1 className="text-3xl font-bold text-center mb-4">Merge PDF</h1>
                 <div className="flex items-center justify-center mb-4">
                     <FaFilePdf size={48} className="text-violet-500 mr-4" />
@@ -84,8 +87,8 @@ const MergePdf = () => {
                 {/* Main File Input */}
                 {selectedFiles.length === 0 && (
                     <label
-                        htmlFor="fileInput"
-                        className="w-full flex items-center justify-center px-4 py-6 bg-violet-100 text-violet-700 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-violet-700 hover:text-white duration-300"
+                    htmlFor="fileInput"
+                    className="w-full flex items-center justify-center px-4 py-6 bg-violet-100 text-violet-700 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-violet-700 hover:text-white duration-300"
                     >
                         <FaPlusCircle size={24} className="mr-2" />
                         <span className="text-xl">Choose Files or Drag & Drop Here</span>
@@ -103,8 +106,8 @@ const MergePdf = () => {
                 {/* If only one file is selected, show the "+" button to add more */}
                 {selectedFiles.length === 1 && (
                     <label
-                        htmlFor="fileInput"
-                        className="flex items-center justify-center mt-4 cursor-pointer text-violet-500 hover:text-violet-700 duration-300"
+                    htmlFor="fileInput"
+                    className="flex items-center justify-center mt-4 cursor-pointer text-violet-500 hover:text-violet-700 duration-300"
                     >
                         <FaPlusCircle size={24} className="mr-2" />
                         <span>Add another file</span>
@@ -129,7 +132,7 @@ const MergePdf = () => {
                     onClick={handleSubmit}
                     disabled={selectedFiles.length < 2 || isLoading}
                     className="px-4 py-2 bg-violet-500 text-white rounded-lg shadow-lg hover:bg-violet-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none mt-4"
-                >
+                    >
                     Merge Files
                 </button>
                 {isLoading && (
@@ -143,6 +146,7 @@ const MergePdf = () => {
                     </p>
                 )}
             </div>
+        </div>
         </div>
     );
 };

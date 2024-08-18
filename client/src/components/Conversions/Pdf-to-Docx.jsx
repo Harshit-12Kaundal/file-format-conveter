@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { FaFilePdf } from 'react-icons/fa';
+import Navbar from '../Navbar';
 
 const PdfToDocxUploader = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -75,6 +76,8 @@ const PdfToDocxUploader = () => {
     };
 
     return (
+        <div>
+        <Navbar/>
         <div className="max-w-screen-lg mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
             <div
                 className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl ${
@@ -83,7 +86,7 @@ const PdfToDocxUploader = () => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-            >
+                >
                 <h1 className="text-3xl font-bold text-center mb-4">Convert PDF to DOCX</h1>
                 <div className="flex items-center justify-center mb-4">
                     <FaFilePdf size={48} className="text-red-500 mr-4" />
@@ -100,7 +103,7 @@ const PdfToDocxUploader = () => {
                 <label
                     htmlFor="fileInput"
                     className="w-full flex items-center justify-center px-4 py-6 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-green-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
-                >
+                    >
                     <FaFilePdf size={48} className="text-red-500 mr-4" />
                     <span className="text-xl">{selectedFile ? selectedFile.name : 'Choose File or Drag & Drop Here'}</span>
                 </label>
@@ -123,6 +126,7 @@ const PdfToDocxUploader = () => {
                 {downloadError && <p className="text-red-500 mt-4">{downloadError}</p>}
             </div>
         </div>
+    </div>
     );
 };
 
