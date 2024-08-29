@@ -62,8 +62,8 @@ const DocxToPdfUploader = () => {
     return (
         <div>
         <Navbar/>
-        <div className="max-w-screen-full mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
-            <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-md">
+        <div className="max-w-screen-lg mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
+            <div className="border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-blue-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl">
                 <h1 className="text-3xl font-bold text-center mb-4">Convert DOCX to PDF</h1>
                 <div className="flex items-center justify-center mb-4">
                     <FaFileWord size={48} className="text-blue-500 mr-4" />
@@ -79,7 +79,7 @@ const DocxToPdfUploader = () => {
                 />
                 <label
                     htmlFor="fileInput"
-                    className="w-full flex items-center justify-center px-4 py-6 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
+                    className="w-full flex items-center justify-center px-4 py-6 bg-gray-100 text-gray-700 rounded-lg shadow-lg border-blue-300 cursor-pointer hover:bg-blue-700 hover:text-white duration-300"
                     >
                     <FaFileWord size={48} className="text-blue-500 mr-4" />
                     <span className="text-xl">{selectedFile ? selectedFile.name : 'Choose File'}</span>
@@ -87,7 +87,7 @@ const DocxToPdfUploader = () => {
                 <button
                     onClick={handleSubmit}
                     disabled={!selectedFile || isLoading}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none"
                     >
                     Convert File
                 </button>
