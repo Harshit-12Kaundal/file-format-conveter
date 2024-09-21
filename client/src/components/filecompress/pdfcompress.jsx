@@ -11,7 +11,7 @@ const CompressPdf = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const sliderRef = useRef(null);
-    // console.log(compressionLevel);
+    console.log(compressionLevel);
 
     useEffect(() => {
         const slider = sliderRef.current;
