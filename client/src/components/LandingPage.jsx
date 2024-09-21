@@ -65,7 +65,7 @@ const LandingPage = () => {
             height: '900px',
             margin: '0 auto',
             position: 'relative',
-            overflow: 'visible', // Make sure the overflow is visible
+            overflow: 'visible',
           }}
         >
           <img
@@ -106,11 +106,24 @@ const LandingPage = () => {
         
         <div className="flex-grow">
           <h3 className="text-4xl font-bold mb-4">Most Popular PDF Tools</h3>
+          <div className='flex flex col '>
           <div className="flex flex-wrap gap-4 justify-center">
-            {conversions.map(conversion => (
+            {conversions.slice(0, 4).map(conversion => (
               <Card key={conversion.id} conversion={conversion} />
             ))}
           </div>
+          <div className='flex items-center'>
+          {conversions.length > 4 && (
+            <div className="flex justify-center mt-4 ml-10 ">
+              <Link to="/tools">
+                <button className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-700">
+                  See All
+                </button>
+              </Link>
+            </div>
+          )}
+          </div>
+        </div>
         </div>
 
         <div className="flex-grow mt-8 mb-16">
