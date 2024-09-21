@@ -6,6 +6,7 @@ import MergePdfs from './components/Conversions/Merge-Pdf.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import Login from './components/UserVerification/Login.jsx';
 import SignUp from './components/UserVerification/SIgnUp.jsx'
+import PdfCompress from './components/filecompress/pdfcompress.jsx'
 import Home from './components/Home.jsx';
 
 const App = () => {
@@ -16,6 +17,7 @@ const App = () => {
           <Route path="/convert/docx-to-pdf" element={<DocxToPdf/>} />
           <Route path="/convert/pdf-to-docx" element={<PdfToDocx/>} />
           <Route path="/convert/merge-pdfs" element={<MergePdfs/>} />
+          <Route path="/convert/pdf-compress" element={<PdfCompress/>} />
           <Route path="/login" element={<Login/>}/>
           <Route path="/SignUp" element={<SignUp/>}/>
           <Route path="/tools" element={<Home/>}/>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import conversions from './cardsdata/CardConversions'; // Importing the conversions data
 import Navbar from './Navbar';
 import Footer from './Footer';
