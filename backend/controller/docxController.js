@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { convertWithLibreOffice } = require('../conversionFunction');
 
-const pdfDir = path.join(__dirname, '../converted/pdfs/');
+const pdfDir = path.join(__dirname, '../converted/pdfs');
 if (!fs.existsSync(pdfDir)) {
     fs.mkdirSync(pdfDir, { recursive: true });
 }

@@ -5,5 +5,7 @@ const upload = multer({ dest: 'uploads/' });
 const pdfController = require('../controller/pdfController');
 
 router.post('/to-docx', upload.single('file'), pdfController.convertPdfToDocx);
+router.post('/to-merge', upload.fields([{name:'file1'}, {name:'file2'}]),pdfController.mergePdf)
+router.post('/to-compress', upload.single('file'),pdfController.compressPdf)
 
 module.exports = router;
