@@ -1,14 +1,14 @@
 # Use an official Node.js runtime as the base image
 FROM node:20
 
-# Install system dependencies: LibreOffice, Python, and Ghostscript
+# Install system dependencies: LibreOffice, Python, Ghostscript, and build dependencies
 RUN apt-get update && \
-    apt-get install -y libreoffice python3-pip ghostscript && \
+    apt-get install -y libreoffice python3-pip ghostscript python3-dev build-essential libxml2-dev libxslt-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install pdf2docx globally
-RUN pip3 install pdf2docx
+# Install wheel and pdf2docx using pip
+RUN pip3 install wheel && pip3 install pdf2docx
 
 # Set the working directory
 WORKDIR /app
