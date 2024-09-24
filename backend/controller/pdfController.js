@@ -97,64 +97,62 @@ exports.mergePdf= async(req,res)=>{
 
 exports.compressPdf = async (req, res) => {
     try {
-        const { compressionLevel } = req.body; // "high", "medium", "low"
+        const compressionLevel = Number(req.body.compressionLevel);
         const file = req.file;
 
         if (!file) {
             return res.status(400).send('No PDF file uploaded.');
         }
 
-        const inputFilePath = path.resolve(file.path);  // Use absolute file path
-        const outputFilePath = path.join(__dirname, `compressed_${file.originalname}`);
+        const inputFilePath = path.resolve(file.path); // Ensure path is correct
+        const outputDir = path.join(__dirname, '../converted/compressed');
+        const outputFilePath = path.join(outputDir, `compressed_${file.originalname}`);
+        console.log(__dirname);
+        console.log(inputFilePath);
+        console.log(outputFilePath);
 
         // Set Ghostscript quality level based on user input
         let gsQuality;
-        if (compressionLevel === 'high') {
-            gsQuality = 'screen';  // Max compression (low quality)
-        } else if (compressionLevel === 'medium') {
-            gsQuality = 'ebook';   // Balanced compression
+        if (compressionLevel >= 75) { // Compare as number
+            gsQuality = 'screen';
+        } else if (compressionLevel < 75 && compressionLevel >= 50) {
+            gsQuality = 'ebook';
         } else {
-            gsQuality = 'prepress'; // Minimal compression (high quality)
+            gsQuality = 'prepress';
         }
 
-        // Run Ghostscript with additional downsampling to compress the PDF
-        const gsCommand = [
-            `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe"`,
-            '-sDEVICE=pdfwrite',
-            `-dPDFSETTINGS=/${gsQuality}`,  // Use gsQuality instead of hardcoding
-            '-dNOPAUSE',
-            '-dQUIET',
-            '-dBATCH',
-            `-sOutputFile="${outputFilePath}"`, // Corrected this line
-            `"${inputFilePath}"`
-        ];
-        
-        
+        // Construct the Ghostscript command
+        const gsCommand = `"C:/Program Files/gs/gs10.03.1/bin/gswin64c.exe" -sDEVICE=pdfwrite -dPDFSETTINGS=/${gsQuality} -dNOPAUSE -dQUIET -dBATCH -dDownsampleColorImages=true -dDownsampleGrayImages=true -dDownsampleMonoImages=true -dColorImageResolution=72 -dGrayImageResolution=72 -dMonoImageResolution=72 "-sOutputFile=${outputFilePath}" "${inputFilePath}"`;
 
-        console.log('Executing Ghostscript with the following command:', gsCommand.join(' '));
+        console.log('Executing Ghostscript with the following command:', gsCommand);
 
-        // Run Ghostscript to compress the PDF
-        await gs.execute(gsCommand);
-
-        // Set the response headers for PDF download
-        res.setHeader('Content-Disposition', `attachment; filename=compressed_${file.originalname}`);
-        res.setHeader('Content-Type', 'application/pdf');
-
-        // Send the compressed PDF file as a response
-        res.sendFile(outputFilePath, (err) => {
-            if (err) {
-                console.error('Error sending the file:', err);
-                return res.status(500).send('Failed to send the compressed PDF.');
+        // Execute the Ghostscript command using exec
+        exec(gsCommand, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing Ghostscript: ${error.message}`);
+                return res.status(500).send('Failed to compress PDF.');
             }
 
-            // Clean up the files
-            try {
-                fs.unlinkSync(outputFilePath); // Delete the compressed PDF after sending
-                fs.unlinkSync(inputFilePath);  // Delete the original input PDF file
-                console.log('Files cleaned up successfully.');
-            } catch (cleanupErr) {
-                console.error('Error during file cleanup:', cleanupErr);
-            }
+            // Set the response headers for PDF download
+            res.setHeader('Content-Disposition', `attachment; filename=compressed_${file.originalname}`);
+            res.setHeader('Content-Type', 'application/pdf');
+
+            // Send the compressed PDF file as a response
+            res.sendFile(outputFilePath, (err) => {
+                if (err) {
+                    console.error('Error sending the file:', err);
+                    return res.status(500).send('Failed to send the compressed PDF.');
+                }
+
+                // Clean up the files
+                try {
+                    fs.unlinkSync(outputFilePath); // Delete the compressed PDF after sending
+                    fs.unlinkSync(inputFilePath);  // Delete the original input PDF file
+                    console.log('Files cleaned up successfully.');
+                } catch (cleanupErr) {
+                    console.error('Error during file cleanup:', cleanupErr);
+                }
+            });
         });
 
     } catch (error) {
@@ -162,6 +160,9 @@ exports.compressPdf = async (req, res) => {
         res.status(500).send('An unexpected error occurred.');
     }
 };
+
+
+
 
 
 
