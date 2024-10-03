@@ -1,6 +1,7 @@
 # Use an official Node.js runtime as the base image
-FROM node:18 AS base  # Downgraded to Node.js 18 for better compatibility with ghostscript4js
+FROM node:18 AS base
 
+# Downgraded to Node.js 18 for better compatibility with ghostscript4js
 # Set the working directory
 WORKDIR /app
 
