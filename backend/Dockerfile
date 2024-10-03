@@ -3,7 +3,7 @@ FROM node:20
 
 # Install system dependencies: LibreOffice, Python, Ghostscript, Ghostscript development files, and build dependencies
 RUN apt-get update && \
-    apt-get install -y libreoffice python3-pip ghostscript ghostscript-dev python3-venv build-essential libxml2-dev libxslt-dev && \
+    apt-get install -y libreoffice python3-pip ghostscript python3-venv build-essential libxml2-dev libxslt-dev && \    
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
