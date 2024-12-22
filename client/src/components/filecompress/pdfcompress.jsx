@@ -67,11 +67,11 @@ const CompressPdf = () => {
     
         const formData = new FormData();
         formData.append('file', selectedFiles[0]);
-        formData.append('compressionLevel', compressionLevel); // Add compression level to the request
+        formData.append('compressionLevel', compressionLevel); // Ensure this is handled in the backend
     
         try {
             const response = await axios.post('http://localhost:3001/convertfile/pdf/to-compress', formData, {
-                responseType: 'blob',
+                responseType: 'blob', // Ensure the response is a blob
             });
     
             // Create a blob URL for the compressed PDF file
@@ -83,20 +83,33 @@ const CompressPdf = () => {
     
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', compressedFileName); // Set the filename to be "compressed.pdf"
+            link.setAttribute('download', compressedFileName); // Set the filename for download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
     
+            // Revoke the blob URL after downloading
+            window.URL.revokeObjectURL(url);
+    
             setCompressMessage('File compressed and downloaded successfully.');
             setSelectedFiles([]); // Clear selected files after download
         } catch (error) {
-            console.error(error);
-            setCompressMessage('An error occurred while compressing the file.');
+            if (error.response) {
+                // Log and display error message from the server
+                const errorData = await error.response.data.text();
+                console.error('Server error during file upload:', errorData);
+                setCompressMessage('An error occurred while compressing the file: ' + errorData);
+            } else {
+                // Handle network or unexpected errors
+                console.error('Error during file upload:', error);
+                setCompressMessage('An unexpected error occurred. Please try again later.');
+            }
         } finally {
             setIsLoading(false);
         }
     };
+    
+    
     
 
     return (
@@ -148,7 +161,7 @@ const CompressPdf = () => {
                     )}
 
                     {/* Compression Level Slider */}
-                    <div className="w-full mt-4">
+                    {/* <div className="w-full mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="compression-range">
                             Select Compression Level:
                         </label>
@@ -164,7 +177,7 @@ const CompressPdf = () => {
                             aria-label="Select Compression Level"
                         />
                         <p className="text-center text-sm mt-2">Compression Level: {compressionLevel}%</p>
-                    </div>
+                    </div> */}
 
                     <button
                         onClick={handleSubmit}

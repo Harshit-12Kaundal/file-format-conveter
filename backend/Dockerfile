@@ -1,15 +1,11 @@
 # Use an official Node.js runtime as the base image
 FROM node:18 AS base
 
-# Downgraded to Node.js 18 for better compatibility with ghostscript4js
 # Set the working directory
 WORKDIR /app
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install Node.js dependencies
-RUN npm install && npm install -g npm@latest
 
 # Install system dependencies: LibreOffice, Python, Ghostscript, and build dependencies
 RUN apt-get update && \
@@ -25,6 +21,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Node.js dependencies
+RUN npm install && npm install -g npm@latest
+
 # Create a virtual environment for Python
 RUN python3 -m venv /opt/venv
 
@@ -33,6 +32,9 @@ RUN /opt/venv/bin/pip install pdf2docx
 
 # Ensure the virtual environment binaries are in PATH
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Ghostscript shared library and create a symlink for compatibility with ghostscript4js
+RUN [ ! -f /usr/lib/x86_64-linux-gnu/libgs.so ] && ln -s /usr/lib/libgs.so /usr/lib/x86_64-linux-gnu/libgs.so || true
 
 # Copy the rest of the application code
 COPY . .
