@@ -1,46 +1,23 @@
-# Use an official Node.js runtime as the base image
-FROM node:18 AS base
+# Base image
+FROM node:20
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install system dependencies: LibreOffice, Python, Ghostscript, and build dependencies
+# Install LibreOffice, Python3, and pdf2docx
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        libreoffice \
-        python3-pip \
-        ghostscript \
-        libgs-dev \
-        python3-venv \
-        build-essential \
-        libxml2-dev \
-        libxslt-dev && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y libreoffice python3-pip && \
+    pip3 install pdf2docx
 
-# Install Node.js dependencies
-RUN npm install && npm install -g npm@latest
-
-# Create a virtual environment for Python
-RUN python3 -m venv /opt/venv
-
-# Install pdf2docx inside the virtual environment
-RUN /opt/venv/bin/pip install pdf2docx
-
-# Ensure the virtual environment binaries are in PATH
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Install Ghostscript shared library and create a symlink for compatibility with ghostscript4js
-RUN [ ! -f /usr/lib/x86_64-linux-gnu/libgs.so ] && ln -s /usr/lib/libgs.so /usr/lib/x86_64-linux-gnu/libgs.so || true
-
-# Copy the rest of the application code
+# Copy the rest of the project files
 COPY . .
 
-# Expose the port the app runs on (based on express app configuration)
+# Expose the backend port
 EXPOSE 3001
 
-# Command to run the application
+# Start the server
 CMD ["npm", "start"]

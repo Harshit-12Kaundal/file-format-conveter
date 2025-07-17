@@ -3,6 +3,8 @@ import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
+import pdfsimpLogo from "../../Images/pdfsimp.png";
+import {Link} from "react-router-dom";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -45,7 +47,7 @@ function Login() {
 
       console.log('User logged in:', user);
       setSuccessMessage('Login successful!');
-      navigate('/'); // Redirect to the homepage or dashboard
+      navigate('/main'); // Redirect to the homepage or dashboard
     } catch (error) {
       console.error('Error logging in:', error.message);
       setErrorMessage(error.message);
@@ -83,16 +85,26 @@ function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-center mb-8">Login</h2>
+    <div className="flex items-center justify-center h-screen bg-gray-900">
+      <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-md p-8">
+        <div className="flex justify-center items-center h-full space-x-8 mb-3">
+            <Link to="/">
+              <img
+                src={pdfsimpLogo}
+                className="w-12 rounded-lg"
+                alt="PDF Simp Logo"
+                loading="lazy"
+                />
+            </Link>
+        </div>
+        <h2 className="text-2xl font-bold text-center text-white mb-8">Login into Your account</h2>
 
         {errorMessage && <p className="text-red-500 text-center mb-4">{errorMessage}</p>}
         {successMessage && <p className="text-green-500 text-center mb-4">{successMessage}</p>}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="usernameOrEmail" className="block text-sm font-bold text-gray-700 mb-2">
+            <label htmlFor="usernameOrEmail" className="block text-sm font-bold text-gray-300 mb-2">
               Username or Email
             </label>
             <input
@@ -100,13 +112,13 @@ function Login() {
               id="usernameOrEmail"
               value={formData.usernameOrEmail}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Enter your username or email"
             />
           </div>
 
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-bold text-gray-300 mb-2">
               Password
             </label>
             <input
@@ -114,7 +126,7 @@ function Login() {
               id="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Enter your password"
             />
           </div>
@@ -129,18 +141,18 @@ function Login() {
 
         {/* Google Login */}
         <div className="my-4 text-center">
-          <p className="text-gray-600 mb-2">Or sign up with:</p>
+          <p className="text-gray-400 mb-2">Or sign up with:</p>
           <button
             onClick={handleGoogleLogin}
-            className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full shadow-md hover:bg-gray-200 transition duration-300 mx-auto"
+            className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full shadow-md hover:bg-gray-600 transition duration-300 mx-auto"
           >
             <FcGoogle size={24} />
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-gray-400">
           Don't have an account?{' '}
-          <a href="/signup" className="text-blue-600 hover:underline">
+          <a href="/signup" className="text-blue-500 hover:underline">
             Sign up
           </a>
         </p>
@@ -150,7 +162,7 @@ function Login() {
           <div className="text-center mt-4">
             <button
               onClick={handleResendVerification}
-              className="text-blue-600 hover:underline"
+              className="text-blue-500 hover:underline"
             >
               Resend verification email
             </button>

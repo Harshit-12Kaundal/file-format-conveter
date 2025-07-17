@@ -1,6 +1,7 @@
 import sys
 from pdf2docx import Converter
 import os
+import traceback
 
 def convert_pdf_to_docx(input_file, output_file):
     try:
@@ -12,8 +13,8 @@ def convert_pdf_to_docx(input_file, output_file):
         input_file = os.path.abspath(input_file)
         output_file = os.path.abspath(output_file)
 
-        print(f"Absolute input file: {input_file}")
-        print(f"Absolute output file: {output_file}")
+        print(f"Absolute input file: '{input_file}'")
+        print(f"Absolute output file: '{output_file}'")
 
         # Check if input file exists
         if not os.path.exists(input_file):
@@ -31,6 +32,8 @@ def convert_pdf_to_docx(input_file, output_file):
         print("Conversion completed successfully.")
     except Exception as e:
         print(f"An error occurred: {e}")
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

@@ -1,5 +1,5 @@
 // Import the database pool from your configuration
-const pool = require('../Config/db');
+import pool from '../Config/db';
 
 // Function to create a new user in the database
 const createUser = async (username, email, hashedPassword) => {
