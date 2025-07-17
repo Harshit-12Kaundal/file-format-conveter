@@ -1,14 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React,{useState,useEffect} from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import gradient from 'random-gradient'
 
-const Card = ({ conversion }) => {
+const Card = ({ conversion, uploadedFile }) => {
+  const navigate = useNavigate();
+  const [gradientStyle, setGradientStyle] = useState('');
+
+  const handleCardClick = () => {
+    navigate(`/convert/${conversion.id}`, { state: { uploadedFile } });
+  };
+   // used gradient to generate random gradient
+    useEffect(() => {
+      // Generate a random gradient when the component mounts
+      const generatedGradient = gradient('unique-seed-' + Math.random());
+      setGradientStyle(generatedGradient);
+    }, []); // Empty dependency array ensures this runs only once on reload
+
   return (
-    <Link to={`/convert/${conversion.id}`} className="block">
-      <div className="w-52 p-12 bg-white shadow-md rounded-lg bg-slate-50 hover:shadow-xl transition-shadow h-64 flex flex-col items-center justify-center hover:bg-gray-300">
+    <div onClick={handleCardClick} className="block cursor-pointer">
+      <div className="w-52 p-12 bg-gray-800 shadow-md rounded-lg hover:shadow-xl transition-shadow h-64 flex flex-col items-center justify-center hover:bg-gray-700"
+         style={{  backgroundImage: gradientStyle}}
+      >
         {conversion.icon}
-        <h3 className="text-lg font-semibold mt-4 text-center">{conversion.title}</h3>
+        <h3 className="text-lg font-semibold mt-4 text-center text-white">{conversion.title}</h3>
       </div>
-    </Link>
+    </div>
   );
 };
 

@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 .env
+src/client_secret_keys.json
 
 # testing
 /coverage

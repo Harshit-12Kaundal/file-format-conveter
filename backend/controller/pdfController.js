@@ -1,26 +1,15 @@
-const path = require('path');
-const oneFolderUp = path.resolve(__dirname, '..');
-const { exec } = require('child_process');
-const fs = require('fs');
-const { convertWithPython } = require('../conversionFunction');
-const {compressWithPython} =require("../conversionFunction")
-const docxDir = path.join(__dirname, '../converted/docx');  
-const compressDir =path.join(__dirname,'../converted/compressed')
-const compressedDir = path.join(__dirname, '../converted/compressed');
-const { PDFDocument } = require('pdf-lib');
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+import { convertWithPython, compressWithPython } from '../conversionFunction.js';
+import { PDFDocument } from 'pdf-lib';
+import multer from 'multer';
 
-if (!fs.existsSync(compressedDir)) {
-    fs.mkdirSync(compressedDir, { recursive: true });
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '../uploads');
 
-if (!fs.existsSync(docxDir)) {
-    fs.mkdirSync(docxDir, { recursive: true });
-}
-
-if (!fs.existsSync(compressDir)) {
-    fs.mkdirSync(compressDir, { recursive: true });
-}
-exports.convertPdfToDocx = async (req, res) => {
+export const convertPdfToDocx = async (req, res) => {
     try {
         const file = req.file;
 
@@ -29,33 +18,25 @@ exports.convertPdfToDocx = async (req, res) => {
         }
 
         const inputFilePath = file.path;
-        console.log(inputFilePath)
-        const outputFilePath = path.join(docxDir, file.filename + '.docx');
-        console.log(outputFilePath);
-        const convertedFileName = file.originalname.replace(/\.[^/.]+$/, "") + '.docx';
-
+        const randomSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const outputFileName = `convertedpdftodocx-${randomSuffix}.docx`;
+        const outputFilePath = path.join(uploadDir, outputFileName);
+        
+        console.log(`Converting file: ${inputFilePath} to ${outputFilePath}`);
         await convertWithPython(inputFilePath, outputFilePath);
+        console.log(`Conversion completed: ${outputFilePath}`);
 
         if (!fs.existsSync(outputFilePath)) {
             console.error(`Output file does not exist: ${outputFilePath}`);
             return res.status(500).send('Conversion failed.');
         }
 
-        res.download(outputFilePath, convertedFileName, (err) => {
+        res.download(outputFilePath, outputFileName, (err) => {
             if (err) {
                 console.error(`Error downloading file: ${err}`);
                 return res.status(500).send('Failed to download file.');
             }
-
-            console.log(`File downloaded successfully: ${outputFilePath}`);
-
-            try {
-                fs.unlinkSync(inputFilePath);
-                fs.unlinkSync(outputFilePath);
-                console.log(`Cleaned up files: ${inputFilePath}, ${outputFilePath}`);
-            } catch (cleanupError) {
-                console.error(`Error cleaning up files: ${cleanupError}`);
-            }
+            // Do not delete files after download
         });
     } catch (error) {
         console.error(`Unexpected error: ${error}`);
@@ -63,9 +44,7 @@ exports.convertPdfToDocx = async (req, res) => {
     }
 };
 
-
-
-exports.mergePdf= async(req,res)=>{
+export const mergePdf = async (req, res) => {
     try {
         const file1Path = req.files['file1'][0].path;
         const file2Path = req.files['file2'][0].path;
@@ -84,15 +63,13 @@ exports.mergePdf= async(req,res)=>{
         copiedPages2.forEach((page) => mergedPdf.addPage(page));
 
         const mergedPdfBytes = await mergedPdf.save();
-        
-        // Send the merged PDF as a response
+
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'attachment; filename="merged.pdf"',
         });
         res.send(Buffer.from(mergedPdfBytes));
 
-        // Clean up the uploaded files
         fs.unlinkSync(file1Path);
         fs.unlinkSync(file2Path);
     } catch (err) {
@@ -101,72 +78,39 @@ exports.mergePdf= async(req,res)=>{
     }
 };
 
-const multer = require('multer');
-
-// Setup multer for file uploads
-const upload = multer({ dest: 'uploads/' }); // Adjust as necessary
-
-exports.compressPdf = async (req, res) => {
+export const compressPdf = async (req, res) => {
     try {
-        // Check if the file is present
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded. Please upload a PDF file.' });
         }
 
         const inputFilePath = req.file.path;
-        console.log('Input file path:', inputFilePath);
+        const outputFilePath = path.join(uploadDir, req.file.filename + '.compressed.pdf');
 
-        // Check if the uploaded file is a PDF
-        // if (!inputFilePath.endsWith('.pdf')) {
-        //     return res.status(400).json({ error: 'Only PDF files are allowed.' });
-        // }
+        await compressWithPython(inputFilePath, outputFilePath);
 
-        // Define the output file path
-        const outputFilePath = path.join(compressDir,req.file.originalname);
-        console.log("outputfilepthis="+outputFilePath);
-        // Ensure the output directory exists
-        const outputDir = path.dirname(outputFilePath);
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-            console.log("Created output directory:", outputDir);
-        }
-
-        // Call the compression function and wait for it to complete
-        await compressWithPython(inputFilePath, outputFilePath); // Ensure this function has its own error handling
-
-        // Check if the file was created successfully
         if (!fs.existsSync(outputFilePath)) {
             console.error('Compressed file does not exist:', outputFilePath);
             return res.status(500).json({ error: 'Failed to create compressed file.' });
         }
 
-        // Send the compressed PDF as a response
         res.download(outputFilePath, (err) => {
             if (err) {
                 console.error('Error sending the file:', err);
                 return res.status(500).json({ error: 'Failed to send the file.' });
             }
 
-            // Clean up the temporary files after sending
-    // Clean up files
             setImmediate(() => {
                 try {
-                    fs.unlinkSync(inputFilePath); // Delete the uploaded file
-                    fs.unlinkSync(outputFilePath); // Delete the compressed file
+                    fs.unlinkSync(inputFilePath);
+                    fs.unlinkSync(outputFilePath);
                 } catch (cleanupError) {
                     console.error('Error cleaning up files:', cleanupError);
                 }
-            });  
+            });
         });
     } catch (error) {
         console.error('Error compressing PDF:', error);
         res.status(500).json({ error: 'Failed to compress PDF.' });
     }
 };
-
-
-
-
-
-
-

@@ -1,14 +1,25 @@
-const { exec } = require('child_process');
-const path = require('path');
+import { exec } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const pythonPath = 'C:\\Python311\\python.exe';
+// const pythonPath = 'C:\\Python311\\python.exe';
 
 
-exports.convertWithLibreOffice = (inputFilePath, outputFilePath, format = 'pdf') => {
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export function convertWithPythonConversion(inputFilePath, outputFilePath, format = 'pdf') {
     return new Promise((resolve, reject) => {
-        const command = `soffice --headless --convert-to ${format} --outdir ${path.dirname(outputFilePath)} ${inputFilePath}`;
+        // Define the path to the Python script for conversion
+        const scriptPath = path.join(__dirname, 'script', 'python_conversion.py');
+
+        // Construct the command to run the Python script with the correct file paths and format
+        const command = `python "${scriptPath.replace(/\\/g, '/')}" "${inputFilePath.replace(/\\/g, '/')}" "${outputFilePath.replace(/\\/g, '/')}" "${format}"`;
+
         console.log(`Executing command: ${command}`);
-        
+
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Execution error: ${error}`);
@@ -22,8 +33,7 @@ exports.convertWithLibreOffice = (inputFilePath, outputFilePath, format = 'pdf')
     });
 };
 
-
-exports.convertWithPython = (inputFilePath, outputFilePath) => {
+export function convertWithPython(inputFilePath, outputFilePath){
     return new Promise((resolve, reject) => {
         // Define the path to the Python script
         const scriptPath = path.join(__dirname, 'script', 'convert.py');
@@ -44,7 +54,7 @@ exports.convertWithPython = (inputFilePath, outputFilePath) => {
     });
 };
 
-exports.compressWithPython = (inputFilePath, outputFilePath) => {
+export function compressWithPython(inputFilePath, outputFilePath){
     return new Promise((resolve, reject) => {
         // Define the path to the Python script
         const scriptPath = path.join(__dirname, 'script', 'filecompression.py');

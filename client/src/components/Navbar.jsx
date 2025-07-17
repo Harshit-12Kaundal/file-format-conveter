@@ -1,19 +1,17 @@
-// src/components/Navbar.js
-import React, { useState,useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { auth } from "../components/firebaseConfig";
 import pdfsimpLogo from '../Images/pdfsimp.png';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { FaUserCircle } from "react-icons/fa"; // User profile icon
 import { HiMenu, HiX } from "react-icons/hi"; // Hamburger menu icons
-import { FaSun, FaMoon } from "react-icons/fa"; // Sun and Moon icons
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-
+  const navigate = useNavigate();
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -31,13 +29,13 @@ const Navbar = () => {
   };
 
   return (
-    <div className="max-w-screen-full px-6 py-3 md:px-40 shadow-lg h-16 flex items-center justify-between relative font-sans bg-white dark:bg-black">
+    <div className="max-w-screen-full px-6 py-3 md:px-40 shadow-lg h-16 flex items-center justify-between relative font-sans bg-gray-800 text-white">
       {/* Left side logo */}
       <div className="flex items-center space-x-8">
         <Link to="/">
           <img
             src={pdfsimpLogo}
-            className="w-14"
+            className="w-14 rounded-lg"
             alt="PDF Simp Logo"
             loading="lazy"
           />
@@ -46,7 +44,10 @@ const Navbar = () => {
 
       {/* Hamburger menu for small screens */}
       <div className="md:hidden">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-2xl text-gray-800 dark:text-white">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="text-2xl text-white"
+        >
           {sidebarOpen ? <HiX /> : <HiMenu />}
         </button>
       </div>
@@ -54,42 +55,44 @@ const Navbar = () => {
       {/* Sidebar for small screens */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 bg-gray-800 bg-opacity-50 flex justify-end">
-          <div className="w-64 h-[70%] bg-white dark:bg-gray-800 rounded-l-2xl shadow-lg flex flex-col p-3">
+          <div className="w-64 h-[70%] bg-gray-900 rounded-l-2xl shadow-lg flex flex-col p-3">
             {/* Close Button */}
             <button
               onClick={() => setSidebarOpen(false)}
-              className="self-end text-2xl text-gray-600 dark:text-gray-200 hover:text-gray-800"
+              className="self-end text-2xl text-gray-200 hover:text-gray-400"
             >
               <HiX />
             </button>
 
             {/* Sidebar Content */}
             <nav className="mt-3 space-y-6 text-center">
-              <Link
-                to="/"
-                onClick={() => setSidebarOpen(false)}
-                className="text-l font-sans text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
-              >
-                Home
-              </Link>
+              {!user && (
+                <Link
+                  to="/"
+                  onClick={() => setSidebarOpen(false)}
+                  className="text-l font-sans text-gray-200 font-bold hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
+                >
+                  Home
+                </Link>
+              )}
               <Link
                 to="/tools"
                 onClick={() => setSidebarOpen(false)}
-                className="text-l font-sans text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
+                className="text-l font-sans text-gray-200 font-bold hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
               >
                 Tools
               </Link>
               {user ? (
                 <div className="flex flex-col mt-4 w-full">
                   <Link
-                    to="/profile"
-                    className="text-l font-sans text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
+                    to="/main/profile"
+                    className="text-l font-sans text-gray-200 font-bold hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
                   >
                     Profile
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="text-l font-sans text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 mt-3 rounded-md text-lg block"
+                    className="text-l font-sans text-gray-200 font-bold hover:bg-gray-700 px-4 py-2 mt-3 rounded-md text-lg block"
                   >
                     Sign Out
                   </button>
@@ -98,7 +101,7 @@ const Navbar = () => {
                 <Link
                   to="/login"
                   onClick={() => setSidebarOpen(false)}
-                  className="text-l font-sans text-gray-800 dark:text-gray-200 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
+                  className="text-l font-sans text-gray-200 font-bold hover:bg-gray-700 px-4 py-2 rounded-md text-lg block"
                 >
                   Login
                 </Link>
@@ -110,15 +113,17 @@ const Navbar = () => {
 
       {/* Regular Navbar content for larger screens */}
       <div className="hidden md:flex items-center space-x-8 relative">
-        <Link
-          to="/"
-          className="text-l font-sans text-gray-800 dark:text-white font-bold hover:opacity-70 duration-300"
-        >
-          Home
-        </Link>
+        {!user && (
+          <Link
+            to="/"
+            className="text-l font-sans text-white font-bold hover:opacity-70 duration-300"
+          >
+            Home
+          </Link>
+        )}
         <Link
           to="/tools"
-          className="text-l font-sans text-gray-800 dark:text-white font-bold hover:opacity-70 duration-300"
+          className="text-l font-sans text-white font-bold hover:opacity-70 duration-300"
         >
           Tools
         </Link>
@@ -127,15 +132,21 @@ const Navbar = () => {
             {/* Profile Icon */}
             <FaUserCircle
               size={30}
-              className="cursor-pointer text-gray-600 dark:text-gray-200"
+              className="cursor-pointer text-gray-200"
               onClick={() => setDropdownOpen((prev) => !prev)}
             />
             {/* Dropdown Menu */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={()=> {navigate('/main/profile');}}
+                  className="w-full text-left px-4 py-2 text-l font-sans text-white font-bold hover:bg-gray-700 rounded-md"
+                >
+                  Profile
+                </button>
                 <button
                   onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 text-l font-sans text-gray-800 dark:text-white font-bold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className="w-full text-left px-4 py-2 text-l font-sans text-white font-bold hover:bg-gray-700 rounded-md"
                 >
                   Sign Out
                 </button>
@@ -145,7 +156,7 @@ const Navbar = () => {
         ) : (
           <Link
             to="/login"
-            className="text-l font-sans text-gray-800 dark:text-white font-bold hover:opacity-70 duration-300"
+            className="text-l font-sans text-white font-bold hover:opacity-70 duration-300"
           >
             Login
           </Link>

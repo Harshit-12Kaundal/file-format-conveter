@@ -3,6 +3,9 @@ import { auth } from '../firebaseConfig'; // Correct Firebase auth import
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updateProfile } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc'; // Google icon from react-icons
+import {Link} from 'react-router-dom'
+import pdfsimpLogo from '../../Images/pdfsimp.png';
+
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -31,7 +34,7 @@ function Signup() {
       const result = await signInWithPopup(auth, provider);
       console.log('Google signup successful, user:', result.user);
       alert('Google signup successful');
-      navigate('/'); // Redirect to homepage after signup
+      navigate('/main'); // Redirect to homepage after signup
     } catch (error) {
       console.error('Error with Google signup:', error.message);
       setErrorMessage(error.message);
@@ -76,9 +79,19 @@ function Signup() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-center mb-8">Sign Up</h2>
+    <div className="flex items-center justify-center h-screen bg-gray-900">
+      <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-md p-8">
+              <div className="flex justify-center items-center h-full space-x-8 mb-3">
+                <Link to="/">
+                  <img
+                    src={pdfsimpLogo}
+                    className="w-12 rounded-lg"
+                    alt="PDF Simp Logo"
+                    loading="lazy"
+                  />
+                </Link>
+              </div>
+        <h2 className="text-xl font-bold text-center text-white mb-3 font-sans">Create new acccount</h2>
 
         {errorMessage && <p className="text-red-500 text-center mb-4">{errorMessage}</p>}
         {successMessage && <p className="text-green-500 text-center mb-4">{successMessage}</p>}
@@ -86,7 +99,7 @@ function Signup() {
         <form onSubmit={handleSubmit}>
           {/* Username field */}
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="username">
               UserName
             </label>
             <input
@@ -94,14 +107,14 @@ function Signup() {
               id="username"
               value={formData.username}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Enter your full name"
             />
           </div>
 
           {/* Email field */}
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="email">
               Email
             </label>
             <input
@@ -109,14 +122,14 @@ function Signup() {
               id="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Enter your email"
             />
           </div>
 
           {/* Password field */}
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
             <input
@@ -124,14 +137,14 @@ function Signup() {
               id="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Enter your password"
             />
           </div>
 
           {/* Confirm Password field */}
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmpassword">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="confirmpassword">
               Confirm Password
             </label>
             <input
@@ -139,7 +152,7 @@ function Signup() {
               id="confirmpassword"
               value={formData.confirmpassword}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
               placeholder="Confirm your password"
             />
           </div>
@@ -155,18 +168,18 @@ function Signup() {
 
         {/* Modernized Social Signup */}
         <div className="my-4 text-center">
-          <p className="text-gray-600 mb-2">Or sign up with:</p>
+          <p className="text-gray-400 mb-2">Or sign up with:</p>
           <button
             onClick={handleGoogleSignup}
-            className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full shadow-md hover:bg-gray-200 transition duration-300 mx-auto"
+            className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full shadow-md hover:bg-gray-600 transition duration-300 mx-auto"
           >
             <FcGoogle size={24} />
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
+        <p className="text-center text-sm text-gray-400 mt-6">
           Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:underline">
+          <a href="/login" className="text-blue-500 hover:underline">
             Login
           </a>
         </p>

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FaFilePdf, FaCompress } from 'react-icons/fa';
 import Navbar from '../Navbar';
 import './style.css'; // Ensure this path is correct
+import gradient from 'random-gradient'
 
 const CompressPdf = () => {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -11,8 +12,14 @@ const CompressPdf = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const sliderRef = useRef(null);
-    console.log(compressionLevel);
+    const [gradientStyle, setGradientStyle] = useState('');
 
+    useEffect(() => {
+      // Generate a random gradient when the component mounts
+      const generatedGradient = gradient('unique-seed-' + Math.random());
+      setGradientStyle(generatedGradient);
+    }, []); // Empty dependency array ensures this runs only once on reload    
+    
     useEffect(() => {
         const slider = sliderRef.current;
         if (slider) {
@@ -33,7 +40,7 @@ const CompressPdf = () => {
 
     const handleDrop = (e) => {
         e.preventDefault();
-        setIsDragging(false);
+        setIsDragging(true);
         const files = Array.from(e.dataTransfer.files).filter(file => file.type === 'application/pdf');
         if (files.length === 0) {
             setCompressMessage('Only PDF files are allowed.');
@@ -47,7 +54,8 @@ const CompressPdf = () => {
         setIsDragging(true);
     };
 
-    const handleDragLeave = () => {
+    const handleDragLeave = (e) => {
+        e.preventDefault();
         setIsDragging(false);
     };
 
@@ -109,17 +117,17 @@ const CompressPdf = () => {
         }
     };
     
-    
-    
-
     return (
-        <div>
+        <div className="bg-gray-900 text-white h-screen">
             <Navbar />
-            <div className="max-w-screen-lg mx-auto container px-6 py-3 md:px-40 flex items-center justify-center w-full">
+            <div className="max-w-screen-lg mx-auto container my-10 px-6 py-3 md:px-40 flex items-center justify-center w-full">
                 <div
-                    className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl ${
-                        isDragging ? 'bg-green-100' : 'bg-white'
+                    className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl
                     }`}
+                    style={{
+                        background:isDragging || selectedFiles.length!=0? gradientStyle : '#2d3748', // Default gradient
+                        transition: 'background-image 0.3s ease',
+                      }}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -127,13 +135,13 @@ const CompressPdf = () => {
                     <h1 className="text-3xl font-bold text-center mb-4">Compress PDF</h1>
                     <div className="flex items-center justify-center mb-4">
                         <FaFilePdf size={48} className="text-green-500 mr-4" />
-                        <p className="text-sm text-center">Reduce the size of your PDF files easily.</p>
+                        <p className="text-sm text-center text-gray-300">Reduce the size of your PDF files easily.</p>
                     </div>
 
                     {selectedFiles.length === 0 && (
                         <label
                             htmlFor="fileInput"
-                            className="w-full flex items-center justify-center px-4 py-6 bg-green-100 text-black-100 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
+                            className="w-full flex items-center justify-center px-4 py-6 bg-gray-700 text-gray-300 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
                         >
                             <FaCompress size={24} className="mr-2" />
                             <span className="text-xl">Choose Files or Drag & Drop Here</span>
@@ -150,9 +158,9 @@ const CompressPdf = () => {
                     {selectedFiles.length > 0 && (
                         <div className="mt-4 w-full">
                             <p className="text-center text-lg mb-2">File(s) selected:</p>
-                            <div className="border border-gray-300 rounded-lg p-4 hover:border-violet-400 hover:bg-green-500 transition duration-300">
+                            <div className="shadow-lg rounded-lg p-4 hover:border-violet-400 hover:bg-green-500 transition duration-300">
                                 {selectedFiles.map((file, index) => (
-                                    <p key={index} className="text-center text-lg font-medium text-gray-800">
+                                    <p key={index} className="text-center text-lg font-medium text-gray-300 truncate max-w-xl">
                                         {file.name}
                                     </p>
                                 ))}
@@ -162,7 +170,7 @@ const CompressPdf = () => {
 
                     {/* Compression Level Slider */}
                     {/* <div className="w-full mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="compression-range">
+                        <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="compression-range">
                             Select Compression Level:
                         </label>
                         <input
