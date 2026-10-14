@@ -1,209 +1,244 @@
+// src/components/tools/CompressPdf.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaFilePdf, FaCompress } from 'react-icons/fa';
+import { FaFilePdf, FaUpload, FaCompress } from 'react-icons/fa';
 import Navbar from '../Navbar';
-import './style.css'; // Ensure this path is correct
-import gradient from 'random-gradient'
+import gradient from 'random-gradient';
+import { useLocation } from 'react-router-dom';
+import { clearUploadedFile, setUploadedFile } from '../../features/uploadSlice';
+import { useSelector, useDispatch } from "react-redux";
+import { auth } from '../firebaseConfig';
+
+const API = "http://localhost:3001";
 
 const CompressPdf = () => {
-    const [selectedFiles, setSelectedFiles] = useState([]);
-    const [compressionLevel, setCompressionLevel] = useState(50); // Default to 50%
-    const [compressMessage, setCompressMessage] = useState('');
-    const [isDragging, setIsDragging] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const sliderRef = useRef(null);
-    const [gradientStyle, setGradientStyle] = useState('');
+  const dispatch = useDispatch();
+  const location = useLocation();
 
-    useEffect(() => {
-      // Generate a random gradient when the component mounts
-      const generatedGradient = gradient('unique-seed-' + Math.random());
-      setGradientStyle(generatedGradient);
-    }, []); // Empty dependency array ensures this runs only once on reload    
-    
-    useEffect(() => {
-        const slider = sliderRef.current;
-        if (slider) {
-            const percentage = (compressionLevel - slider.min) / (slider.max - slider.min) * 100;
-            slider.style.background = `linear-gradient(to right, #4caf50 ${percentage}%, #d3d3d3 ${percentage}%)`;
+  const mainFile = useSelector(state => state.upload.file);
+  const mainFileName = useSelector(state => state.upload.fileName);
+
+  const [secondFile, setSecondFile] = useState(null);
+  const [reopenLoading, setReopenLoading] = useState(false);
+
+  const [compressMessage, setCompressMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [gradientStyle, setGradientStyle] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const g = gradient('unique-seed-' + Math.random());
+    setGradientStyle(g);
+  }, []);
+
+  const shortName = (name) =>
+    name && name.length > 25 ? name.slice(0, 22) + "..." : name;
+
+  // NEW: if opened from "My Work" sidebar, fetch that file and preload
+  // it via the same Redux slice the normal flow uses.
+  useEffect(() => {
+    const { fileId, fileName } = location.state || {};
+    if (!fileId) return;
+
+    setReopenLoading(true);
+    (async () => {
+      try {
+        const response = await fetch(`${API}/files/${fileId}`);
+        if (!response.ok) {
+          setCompressMessage("Could not load that file — it may no longer exist on the server.");
+          return;
         }
-    }, [compressionLevel]);
+        const blob = await response.blob();
+        const file = new File([blob], fileName || "reopened-file.pdf", { type: "application/pdf" });
+        dispatch(setUploadedFile(file));
+      } catch (err) {
+        console.error("Failed to reopen file:", err);
+        setCompressMessage("Failed to load that file.");
+      } finally {
+        setReopenLoading(false);
+      }
+    })();
+  }, [location.state, dispatch]);
 
-    const handleFileChange = (e) => {
-        const files = Array.from(e.target.files).filter(file => file.type === 'application/pdf');
-        if (files.length === 0) {
-            setCompressMessage('Only PDF files are allowed.');
-            return;
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file?.type === "application/pdf") {
+      setSecondFile(file);
+      dispatch(setUploadedFile(file));
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file?.type === "application/pdf") {
+      setSecondFile(file);
+      dispatch(setUploadedFile(file));
+    } else {
+      setCompressMessage("Only PDF allowed");
+    }
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleCompress = async () => {
+    const fileToCompress = secondFile || mainFile;
+
+    if (!fileToCompress) {
+      setCompressMessage("Upload a PDF in Main OR here.");
+      return;
+    }
+
+    setCompressMessage('');
+    setUploadProgress(0);
+    setIsLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", fileToCompress);
+
+    // NEW: send uid/email so the backend can log this conversion
+    const user = auth.currentUser;
+    if (user) {
+      formData.append("uid", user.uid);
+      formData.append("email", user.email);
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3001/convertfile/pdf/to-compress",
+        formData,
+        {
+          withCredentials: true,
+          responseType: 'blob',
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percent);
+          }
         }
-        setSelectedFiles(files);
-        setCompressMessage('');
-    };
+      );
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-        const files = Array.from(e.dataTransfer.files).filter(file => file.type === 'application/pdf');
-        if (files.length === 0) {
-            setCompressMessage('Only PDF files are allowed.');
-            return;
-        }
-        setSelectedFiles(files);
-    };
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      const baseName = (secondFile?.name || mainFileName).replace(".pdf", "");
+      link.href = url;
+      link.setAttribute("download", `${baseName}_compressed.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
+      setCompressMessage("Compression complete! File downloaded.");
+      setSecondFile(null);
+      dispatch(clearUploadedFile());
 
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
+    } catch (err) {
+      console.error(err);
+      setCompressMessage("Compression failed. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleCompressionChange = (e) => {
-        setCompressionLevel(e.target.value);
-    };
+  return (
+    <div
+      className="
+        min-h-screen flex flex-col
+        bg-gray-50 text-black       
+        dark:bg-gray-900 dark:text-white
+        transition-colors duration-300
+      "
+    >
+      <Navbar />
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-    
-        if (selectedFiles.length === 0) {
-            setCompressMessage('Please select a PDF file to compress.');
-            return;
-        }
-    
-        setIsLoading(true);
-    
-        const formData = new FormData();
-        formData.append('file', selectedFiles[0]);
-        formData.append('compressionLevel', compressionLevel); // Ensure this is handled in the backend
-    
-        try {
-            const response = await axios.post('http://localhost:3001/convertfile/pdf/to-compress', formData, {
-                responseType: 'blob', // Ensure the response is a blob
-            });
-    
-            // Create a blob URL for the compressed PDF file
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-    
-            // Dynamically get the filename from the original file or set default
-            const originalFileName = selectedFiles[0].name;
-            const compressedFileName = originalFileName.replace(/\.pdf$/i, '_compressed.pdf'); // Adding "_compressed" to the original filename
-    
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', compressedFileName); // Set the filename for download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-    
-            // Revoke the blob URL after downloading
-            window.URL.revokeObjectURL(url);
-    
-            setCompressMessage('File compressed and downloaded successfully.');
-            setSelectedFiles([]); // Clear selected files after download
-        } catch (error) {
-            if (error.response) {
-                // Log and display error message from the server
-                const errorData = await error.response.data.text();
-                console.error('Server error during file upload:', errorData);
-                setCompressMessage('An error occurred while compressing the file: ' + errorData);
-            } else {
-                // Handle network or unexpected errors
-                console.error('Error during file upload:', error);
-                setCompressMessage('An unexpected error occurred. Please try again later.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    return (
-        <div className="bg-gray-900 text-white h-screen">
-            <Navbar />
-            <div className="max-w-screen-lg mx-auto container my-10 px-6 py-3 md:px-40 flex items-center justify-center w-full">
-                <div
-                    className={`border-2 border-dashed px-4 py-2 md:px-8 md:py-6 border-green-400 rounded-lg shadow-lg flex flex-col items-center space-y-4 w-full max-w-2xl
-                    }`}
-                    style={{
-                        background:isDragging || selectedFiles.length!=0? gradientStyle : '#2d3748', // Default gradient
-                        transition: 'background-image 0.3s ease',
-                      }}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                >
-                    <h1 className="text-3xl font-bold text-center mb-4">Compress PDF</h1>
-                    <div className="flex items-center justify-center mb-4">
-                        <FaFilePdf size={48} className="text-green-500 mr-4" />
-                        <p className="text-sm text-center text-gray-300">Reduce the size of your PDF files easily.</p>
-                    </div>
+      <main className="pt-24 pb-10 flex flex-col items-center">
 
-                    {selectedFiles.length === 0 && (
-                        <label
-                            htmlFor="fileInput"
-                            className="w-full flex items-center justify-center px-4 py-6 bg-gray-700 text-gray-300 rounded-lg shadow-lg border-violet-300 cursor-pointer hover:bg-green-700 hover:text-white duration-300"
-                        >
-                            <FaCompress size={24} className="mr-2" />
-                            <span className="text-xl">Choose Files or Drag & Drop Here</span>
-                        </label>
-                    )}
-                    <input
-                        type="file"
-                        accept=".pdf"
-                        className="hidden"
-                        id="fileInput"
-                        onChange={handleFileChange}
-                    />
+        <h1 className="text-3xl font-bold mb-8">Compress PDF</h1>
 
-                    {selectedFiles.length > 0 && (
-                        <div className="mt-4 w-full">
-                            <p className="text-center text-lg mb-2">File(s) selected:</p>
-                            <div className="shadow-lg rounded-lg p-4 hover:border-violet-400 hover:bg-green-500 transition duration-300">
-                                {selectedFiles.map((file, index) => (
-                                    <p key={index} className="text-center text-lg font-medium text-gray-300 truncate max-w-xl">
-                                        {file.name}
-                                    </p>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+        {reopenLoading && (
+          <p className="mb-4 text-sm text-blue-500">Loading your file...</p>
+        )}
 
-                    {/* Compression Level Slider */}
-                    {/* <div className="w-full mt-4">
-                        <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="compression-range">
-                            Select Compression Level:
-                        </label>
-                        <input
-                            id="compression-range"
-                            type="range"
-                            min="1"
-                            max="100"
-                            value={compressionLevel}
-                            onChange={handleCompressionChange}
-                            className="ml-36 custom-slider"
-                            ref={sliderRef}
-                            aria-label="Select Compression Level"
-                        />
-                        <p className="text-center text-sm mt-2">Compression Level: {compressionLevel}%</p>
-                    </div> */}
+        <div
+          className={`
+            w-[450px] h-[260px] rounded-xl flex flex-col justify-center items-center
+            cursor-pointer border-2 transition-all
+            border-gray-400 dark:border-gray-600
+            bg-gray-100 dark:bg-gray-800
+            hover:border-blue-500
+            ${isDragging ? "ring-4 ring-blue-400 dark:ring-blue-300" : ""}
+          `}
+          style={{ background: (mainFile || secondFile) ? gradientStyle : undefined }}
+          onClick={() => fileInputRef.current.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <FaFilePdf className="text-6xl mb-3" />
 
-                    <button
-                        onClick={handleSubmit}
-                        disabled={selectedFiles.length === 0 || isLoading}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-700 duration-300 disabled:bg-gray-400 disabled:pointer-events-none mt-4"
-                        aria-label="Compress File"
-                    >
-                        {isLoading ? 'Compressing...' : 'Compress File'}
-                    </button>
-                    {compressMessage && (
-                        <p className={`mt-4 ${compressMessage.includes('error') ? 'text-red-500' : 'text-green-500'}`}>
-                            {compressMessage}
-                        </p>
-                    )}
-                </div>
-            </div>
+          <p className="text-lg">
+            1️⃣ Using: {shortName(mainFileName) || "Upload in Main Page"}
+          </p>
+
+          <p className="text-lg mt-2">
+            2️⃣ Replace: {shortName(secondFile?.name) ||
+              (isDragging ? "Drop PDF here..." : "Click or Drag to replace")}
+          </p>
+
+          <FaUpload className="text-2xl mt-4" />
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf"
+            onChange={handleFileSelect}
+          />
         </div>
-    );
+
+        {uploadProgress > 0 && (
+          <div className="w-[450px] mt-4">
+            <div className="bg-gray-300 dark:bg-gray-700 rounded-full h-3 transition-colors">
+              <div
+                className="bg-blue-500 h-3 rounded-full transition-all"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="text-center mt-1">{uploadProgress}%</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleCompress}
+          disabled={isLoading}
+          className="
+            mt-6 px-7 py-2 rounded-lg
+            bg-blue-600 hover:bg-blue-700
+            text-white font-semibold
+            transition-all
+          "
+        >
+          <FaCompress className="inline-block mr-2" />
+          {isLoading ? "Compressing..." : "Compress File"}
+        </button>
+
+        {compressMessage && (
+          <p className="mt-4 text-lg">
+            {compressMessage}
+          </p>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default CompressPdf;

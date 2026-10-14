@@ -1,27 +1,24 @@
-# Base image with Node.js (consider using a slim or LTS variant for fewer vulnerabilities)
-FROM node:18-slim
+FROM node:20-bullseye
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies: LibreOffice and Python3
+# Install LibreOffice and Python
 RUN apt-get update && \
-    apt-get install -y libreoffice python3-pip && \
-    pip3 install --break-system-packages pdf2docx && \
+    apt-get install -y libreoffice python3 python3-pip && \
+    pip3 install \
+        pdf2docx==0.5.6 \
+        PyMuPDF==1.21.1 \
+        sentence-transformers \
+        faiss-cpu \
+        torch \
+        numpy && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install dependencies
+WORKDIR /app
+
 COPY package*.json ./
 RUN npm install
 
-# Copy the full application
 COPY . .
 
-# Create uploads directory (for multer)
-RUN mkdir -p uploads
+EXPOSE 3001
 
-# Expose the port your app runs on
-EXPOSE 8000
-
-# Start the app
 CMD ["npm", "start"]

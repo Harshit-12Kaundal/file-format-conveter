@@ -1,19 +1,21 @@
+// src/components/Login/Login.jsx
 import React, { useState } from 'react';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import pdfsimpLogo from "../../Images/pdfsimp.png";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
+import axios from 'axios';
 
-function Login() {
+function Login({setOtpVerified}) {
   const [formData, setFormData] = useState({
     usernameOrEmail: '',
     password: '',
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isEmailNotVerified, setIsEmailNotVerified] = useState(false); // State to track email verification status
+  const [isEmailNotVerified, setIsEmailNotVerified] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -33,21 +35,26 @@ function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        formData.usernameOrEmail,
+        formData.usernameOrEmail.trim(),
         formData.password
       );
       const user = userCredential.user;
+      await user.reload();
 
-      // Check if email is verified
       if (!user.emailVerified) {
         setErrorMessage('Please verify your email before logging in.');
-        setIsEmailNotVerified(true); // Mark email as not verified
+        setIsEmailNotVerified(true);
         return;
       }
+      localStorage.removeItem("otpVerified");
+      setOtpVerified(false); // prop passed down from App.js, same as VerifyOtp gets
 
-      console.log('User logged in:', user);
-      setSuccessMessage('Login successful!');
-      navigate('/main'); // Redirect to the homepage or dashboard
+      localStorage.setItem("user", JSON.stringify({ email: user.email }));
+
+      await axios.post('http://localhost:3001/api/auth/send-otp',{ email: user.email });
+
+      navigate('/verify-otp',{ state:{ email: user.email } });
+
     } catch (error) {
       console.error('Error logging in:', error.message);
       setErrorMessage(error.message);
@@ -60,15 +67,19 @@ function Login() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if email is verified
       if (!user.emailVerified) {
         setErrorMessage('Please verify your email before logging in.');
-        setIsEmailNotVerified(true); // Mark email as not verified
+        setIsEmailNotVerified(true);
         return;
       }
+      localStorage.removeItem("otpVerified");
+      setOtpVerified(false);
 
-      console.log('Google Login Successful:', user);
-      navigate('/'); // Redirect to the homepage or dashboard
+      localStorage.setItem("user", JSON.stringify({ email: user.email }));
+
+      await axios.post('http://localhost:3001/api/auth/send-otp',{ email: user.email });
+      navigate('/verify-otp',{ state:{ email: user.email } });
+
     } catch (error) {
       console.error('Error with Google Login:', error.message);
       setErrorMessage('Failed to login with Google. Please try again.');
@@ -85,76 +96,119 @@ function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900">
-      <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-md p-8">
-        <div className="flex justify-center items-center h-full space-x-8 mb-3">
-            <Link to="/">
-              <img
-                src={pdfsimpLogo}
-                className="w-12 rounded-lg"
-                alt="PDF Simp Logo"
-                loading="lazy"
-                />
-            </Link>
+    <div
+      className="
+        flex items-center justify-center min-h-screen
+        bg-gray-50 text-black
+        dark:bg-gray-900 dark:text-white
+        transition-colors duration-300
+      "
+    >
+      {/* CARD */}
+      <div
+        className="
+          w-full max-w-md rounded-xl shadow-xl p-8
+          bg-white/90 dark:bg-gray-800/90 backdrop-blur
+          border border-gray-200 dark:border-gray-700
+          transition-colors duration-300
+        "
+      >
+        {/* Logo */}
+        <div className="flex justify-center items-center mb-4">
+          <Link to="/">
+            <img
+              src={pdfsimpLogo}
+              className="w-14 rounded-lg"
+              alt="PDF Simp Logo"
+              loading="lazy"
+            />
+          </Link>
         </div>
-        <h2 className="text-2xl font-bold text-center text-white mb-8">Login into Your account</h2>
 
-        {errorMessage && <p className="text-red-500 text-center mb-4">{errorMessage}</p>}
-        {successMessage && <p className="text-green-500 text-center mb-4">{successMessage}</p>}
+        <h2 className="text-2xl font-bold text-center mb-6">
+          Login into your account
+        </h2>
 
+        {/* Messages */}
+        {errorMessage && <p className="text-red-500 text-center mb-3">{errorMessage}</p>}
+        {successMessage && <p className="text-green-500 text-center mb-3">{successMessage}</p>}
+
+        {/* FORM */}
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="usernameOrEmail" className="block text-sm font-bold text-gray-300 mb-2">
-              Username or Email
-            </label>
-            <input
-              type="text"
-              id="usernameOrEmail"
-              value={formData.usernameOrEmail}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Enter your username or email"
-            />
-          </div>
 
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-bold text-gray-300 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Enter your password"
-            />
-          </div>
+          <label className="block text-sm font-semibold mb-1">
+            Username or Email
+          </label>
+          <input
+            type="text"
+            id="usernameOrEmail"
+            value={formData.usernameOrEmail}
+            onChange={handleChange}
+            className="
+              w-full px-3 py-2 rounded-lg mb-4
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors duration-300
+            "
+            placeholder="Enter your username or email"
+          />
+
+          <label className="block text-sm font-semibold mb-1">
+            Password
+          </label>
+          <input
+            type="password"
+            id="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="
+              w-full px-3 py-2 rounded-lg mb-6
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors duration-300
+            "
+            placeholder="Enter your password"
+          />
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+            className="
+              w-full py-2 rounded-lg font-semibold
+              bg-blue-600 text-white
+              hover:bg-blue-700
+              transition duration-300
+            "
           >
             Login
           </button>
         </form>
 
         {/* Google Login */}
-        <div className="my-4 text-center">
-          <p className="text-gray-400 mb-2">Or sign up with:</p>
+        <div className="mt-5 mb-3 text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-1">Or continue with</p>
+
           <button
             onClick={handleGoogleLogin}
-            className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full shadow-md hover:bg-gray-600 transition duration-300 mx-auto"
+            className="
+              flex items-center justify-center w-12 h-12 mx-auto
+              bg-gray-200 dark:bg-gray-700
+              rounded-full shadow-sm
+              hover:bg-gray-300 dark:hover:bg-gray-600
+              transition-all
+            "
           >
             <FcGoogle size={24} />
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-400">
+        {/* Signup Link */}
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           Don't have an account?{' '}
-          <a href="/signup" className="text-blue-500 hover:underline">
+          <Link to="/signup" className="text-blue-600 hover:underline">
             Sign up
-          </a>
+          </Link>
         </p>
 
         {/* Resend verification email */}
@@ -162,7 +216,7 @@ function Login() {
           <div className="text-center mt-4">
             <button
               onClick={handleResendVerification}
-              className="text-blue-500 hover:underline"
+              className="text-blue-600 hover:underline"
             >
               Resend verification email
             </button>
