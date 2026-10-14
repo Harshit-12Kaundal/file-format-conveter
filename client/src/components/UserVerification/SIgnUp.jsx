@@ -1,187 +1,219 @@
-import React, { useState } from 'react';
-import { auth } from '../firebaseConfig'; // Correct Firebase auth import
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, updateProfile } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-import { FcGoogle } from 'react-icons/fc'; // Google icon from react-icons
-import {Link} from 'react-router-dom'
-import pdfsimpLogo from '../../Images/pdfsimp.png';
-
+// src/components/Login/Signup.jsx
+import React, { useState } from "react";
+import { auth } from "../firebaseConfig";
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendEmailVerification,
+  updateProfile,
+} from "firebase/auth";
+import { useNavigate, Link } from "react-router-dom";
+import { FcGoogle } from "react-icons/fc";
+import pdfsimpLogo from "../../Images/pdfsimp.png";
+import axios from "axios";
 
 function Signup() {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmpassword: '',
+    username: "",
+    email: "",
+    password: "",
+    confirmpassword: "",
   });
 
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const navigate = useNavigate(); // React Router for navigation
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  // Google Authentication handler
+  /* ---------------- GOOGLE SIGNUP ---------------- */
   const handleGoogleSignup = async () => {
-    const provider = new GoogleAuthProvider();
-
     try {
+      const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      console.log('Google signup successful, user:', result.user);
-      alert('Google signup successful');
-      navigate('/main'); // Redirect to homepage after signup
+      const user = result.user;
+
+      await axios.post("http://localhost:3001/api/auth/send-otp", {
+        email: user.email,
+      });
+
+      navigate("/verify-otp", { state: { email: user.email } });
     } catch (error) {
-      console.error('Error with Google signup:', error.message);
-      setErrorMessage(error.message);
+      console.error("Google signup error:", error);
+      setErrorMessage("Google signup failed");
     }
   };
 
+  /* ---------------- EMAIL + PASSWORD SIGNUP ---------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
 
-    // Validate passwords match
     if (formData.password !== formData.confirmpassword) {
-      setErrorMessage('Passwords do not match');
+      setErrorMessage("Passwords do not match");
       return;
     }
 
     try {
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      console.log('User created: ', userCredential.user);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      const user = userCredential.user;
 
-      // Update user's profile with username
-      await updateProfile(userCredential.user, {
-        displayName: formData.username,
-      });
-      console.log('Username updated:', formData.username);
+      await updateProfile(user, { displayName: formData.username });
+      await sendEmailVerification(user);
 
-      // Send verification email
-      await sendEmailVerification(userCredential.user);
-      console.log('Verification email sent.');
+      setSuccessMessage(
+        "Registration successful! Please verify your email before logging in."
+      );
 
-      setSuccessMessage('Registration successful! Please check your email to verify your account.');
-
-      // Redirect after successful signup
-      setTimeout(() => {
-        navigate('/login'); // Redirect to login after a short delay
-      }, 2000); // Adjust delay as needed
-
+      setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
-      console.error('Error registering user:', error.message);
+      console.error("Signup error:", error);
       setErrorMessage(error.message);
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900">
-      <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-md p-8">
-              <div className="flex justify-center items-center h-full space-x-8 mb-3">
-                <Link to="/">
-                  <img
-                    src={pdfsimpLogo}
-                    className="w-12 rounded-lg"
-                    alt="PDF Simp Logo"
-                    loading="lazy"
-                  />
-                </Link>
-              </div>
-        <h2 className="text-xl font-bold text-center text-white mb-3 font-sans">Create new acccount</h2>
+    <div
+      className="
+      flex items-center justify-center min-h-screen
+      bg-gray-50 text-black
+      dark:bg-gray-900 dark:text-white
+      transition-colors duration-300
+    ">
+      {/* CARD */}
+      <div
+        className="
+          w-full max-w-md rounded-xl shadow-xl p-8
+          bg-white/90 dark:bg-gray-800/90 backdrop-blur
+          border border-gray-200 dark:border-gray-700
+          transition-colors duration-300
+        "
+      >
+        {/* LOGO */}
+        <div className="flex justify-center mb-5">
+          <Link to="/">
+            <img src={pdfsimpLogo} className="w-14 rounded-lg" alt="PDF Simp Logo" />
+          </Link>
+        </div>
 
-        {errorMessage && <p className="text-red-500 text-center mb-4">{errorMessage}</p>}
-        {successMessage && <p className="text-green-500 text-center mb-4">{successMessage}</p>}
+        <h2 className="text-2xl font-bold text-center mb-4">
+          Create new account
+        </h2>
 
+        {/* MESSAGES */}
+        {errorMessage && (
+          <p className="text-red-500 text-center mb-3">{errorMessage}</p>
+        )}
+        {successMessage && (
+          <p className="text-green-500 text-center mb-3">{successMessage}</p>
+        )}
+
+        {/* FORM */}
         <form onSubmit={handleSubmit}>
-          {/* Username field */}
-          <div className="mb-4">
-            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="username">
-              UserName
-            </label>
-            <input
-              type="text"
-              id="username"
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Enter your full name"
-            />
-          </div>
+          <input
+            id="username"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            className="
+              w-full mb-3 px-3 py-2 rounded-lg
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors
+            "
+          />
 
-          {/* Email field */}
-          <div className="mb-4">
-            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Enter your email"
-            />
-          </div>
+          <input
+            id="email"
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="
+              w-full mb-3 px-3 py-2 rounded-lg
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors
+            "
+          />
 
-          {/* Password field */}
-          <div className="mb-4">
-            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Enter your password"
-            />
-          </div>
+          <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="
+              w-full mb-3 px-3 py-2 rounded-lg
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors
+            "
+          />
 
-          {/* Confirm Password field */}
-          <div className="mb-6">
-            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="confirmpassword">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmpassword"
-              value={formData.confirmpassword}
-              onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white"
-              placeholder="Confirm your password"
-            />
-          </div>
+          <input
+            id="confirmpassword"
+            type="password"
+            placeholder="Confirm Password"
+            value={formData.confirmpassword}
+            onChange={handleChange}
+            className="
+              w-full mb-5 px-3 py-2 rounded-lg
+              bg-gray-200 dark:bg-gray-700
+              text-black dark:text-white
+              focus:ring-2 focus:ring-blue-500
+              transition-colors
+            "
+          />
 
-          {/* Sign up button */}
+          {/* SUBMIT */}
           <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+            className="
+              w-full py-2 rounded-lg font-semibold
+              bg-blue-600 text-white
+              hover:bg-blue-700
+              transition duration-300
+            "
           >
             Sign Up
           </button>
         </form>
 
-        {/* Modernized Social Signup */}
-        <div className="my-4 text-center">
-          <p className="text-gray-400 mb-2">Or sign up with:</p>
+        {/* GOOGLE SIGNUP */}
+        <div className="my-5 text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-2">
+            Or sign up with
+          </p>
           <button
             onClick={handleGoogleSignup}
-            className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full shadow-md hover:bg-gray-600 transition duration-300 mx-auto"
+            className="
+              flex items-center justify-center w-12 h-12 mx-auto
+              bg-gray-200 dark:bg-gray-700
+              rounded-full shadow-sm
+              hover:bg-gray-300 dark:hover:bg-gray-600
+              transition-all
+            "
           >
             <FcGoogle size={24} />
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-500 hover:underline">
+        {/* LOGIN LINK */}
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 hover:underline">
             Login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

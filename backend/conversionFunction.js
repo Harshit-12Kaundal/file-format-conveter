@@ -1,85 +1,81 @@
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-// const pythonPath = 'C:\\Python311\\python.exe';
-
-
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function convertWithPythonConversion(inputFilePath, outputFilePath, format = 'pdf') {
-    return new Promise((resolve, reject) => {
-        // Define the path to the Python script for conversion
-        const scriptPath = path.join(__dirname, 'script', 'python_conversion.py');
+// Decide Python path based on OS (Windows vs Docker/Linux)
+const PYTHON_PATH =
+  process.platform === "win32"
+    ? `"C:\\Users\\new\\AppData\\Local\\Python\\bin\\python.exe"` // optional for local dev
+    : "python3";
 
-        // Construct the command to run the Python script with the correct file paths and format
-        const command = `python "${scriptPath.replace(/\\/g, '/')}" "${inputFilePath.replace(/\\/g, '/')}" "${outputFilePath.replace(/\\/g, '/')}" "${format}"`;
+// ---------------- DOCX -> PDF via LibreOffice ----------------
+export function convertWithLibreOffice(inputFilePath, outputDir) {
+  return new Promise((resolve, reject) => {
+    const sofficePath = "soffice"; // works in Docker
 
-        console.log(`Executing command: ${command}`);
+    const input = path.resolve(inputFilePath).replace(/\\/g, '/');
+    const outDir = path.resolve(outputDir).replace(/\\/g, '/');
 
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Execution error: ${error}`);
-                console.error(`stderr: ${stderr}`);
-                return reject(error);
-            }
-            console.log(`stdout: ${stdout}`);
-            console.log(`stderr: ${stderr}`);
-            resolve(stdout || stderr);
-        });
+    const cmd = `${sofficePath} --headless --nologo --nofirststartwizard --convert-to pdf "${input}" --outdir "${outDir}"`;
+
+    console.log("Executing LibreOffice:", cmd);
+
+    exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("LibreOffice error:", stderr);
+        return reject(error);
+      }
+      resolve(stdout || stderr);
     });
-};
+  });
+}
 
-export function convertWithPython(inputFilePath, outputFilePath){
-    return new Promise((resolve, reject) => {
-        // Define the path to the Python script
-        const scriptPath = path.join(__dirname, 'script', 'convert.py');
-        
-        // Construct the command to run the Python script with the correct file paths
-        const command = `python "${scriptPath.replace(/\\/g, '/')}" ${inputFilePath.replace(/\\/g, '/')} ${outputFilePath.replace(/\\/g, '/')}`;
-        
-        // Execute the command
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                // Handle any errors during execution
-                console.error(`exec error: ${error}`);
-                return reject(error);
-            }
-            // Resolve the promise with the command's output
-            resolve(stdout || stderr);
-        });
+// ---------------- PDF -> DOCX via pdf2docx ----------------
+export function convertWithPython(inputFilePath, outputFilePath) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, 'script', 'convert.py');
+
+    const input = path.resolve(inputFilePath).replace(/\\/g, '/');
+    const output = path.resolve(outputFilePath).replace(/\\/g, '/');
+    const script = scriptPath.replace(/\\/g, '/');
+
+    const cmd = `${PYTHON_PATH} "${script}" "${input}" "${output}"`;
+
+    console.log("Executing PDF -> DOCX:", cmd);
+
+    exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("pdf2docx error:", stderr);
+        return reject(error);
+      }
+      resolve(stdout || stderr);
     });
-};
+  });
+}
 
-export function compressWithPython(inputFilePath, outputFilePath){
-    return new Promise((resolve, reject) => {
-        // Define the path to the Python script
-        const scriptPath = path.join(__dirname, 'script', 'filecompression.py');
-        console.log("scriptpath="+scriptPath);
+// ---------------- Compression via Python ----------------
+export function compressWithPython(inputFilePath, outputFilePath) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, 'script', 'filecompression.py');
 
-        // Construct the command to run the Python script with the correct file paths
-        const command = `python "${scriptPath.replace(/\\/g, '/')}" "${inputFilePath.replace(/\\/g, '/')}" "${outputFilePath.replace(/\\/g, '/')}"`;
+    const input = path.resolve(inputFilePath).replace(/\\/g, '/');
+    const output = path.resolve(outputFilePath).replace(/\\/g, '/');
+    const script = scriptPath.replace(/\\/g, '/');
 
+    const cmd = `${PYTHON_PATH} "${script}" "${input}" "${output}"`;
 
-        // Log the command to check if it's correct
-        console.log(`Executing command: ${command}`);
+    console.log("Executing compression:", cmd);
 
-        // Execute the command
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                // Handle any errors during execution
-                console.error(`exec error: ${error.message}`);
-                return reject(new Error(`Error executing Python script: ${error.message}`));
-            }
-            // Resolve the promise with the command's output
-            resolve(stdout || stderr);
-        });
+    exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("compression error:", stderr);
+        return reject(error);
+      }
+      resolve(stdout || stderr);
     });
-};
-
-
-
-
+  });
+}

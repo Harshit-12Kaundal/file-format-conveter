@@ -1,59 +1,74 @@
+import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { convertWithPythonConversion } from '../conversionFunction.js';
+
+import { convertWithLibreOffice } from '../conversionFunction.js';
+import { logConversion } from '../log/logconversion.js';
+import { ConversionType } from '@prisma/client';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const pdfDir = path.join(__dirname, '../uploads');
+const __dirname  = path.dirname(__filename);
+const uploadDir  = path.join(__dirname, '../uploads');
 
-// Ensure uploads directory exists for both uploaded and converted files
-if (!fs.existsSync(pdfDir)) {
-    fs.mkdirSync(pdfDir, { recursive: true });
-}
-
+/* ─────────────────────────────────────────────────────────────
+   POST /convertfile/docx/to-pdf
+───────────────────────────────────────────────────────────── */
 export const convertWithLibreOffice12 = async (req, res) => {
-    try {
-        const file = req.file;
-        console.log(file)
-        if (!file) {
-            console.error('No file uploaded.');
-            return res.status(400).send('No file uploaded.');
-        }
+  try {
+    const intent = req.body.intent ?? 'docx_to_pdf';
+    const file   = req.file;
 
-        const inputFilePath = file.path;
-        // Generate a random string for the filename
-        const randomStr = Math.random().toString(36).substring(2, 10);
-        const outputFileName = `Convertedtopdf-${randomStr}.pdf`;
-        const outputFilePath = path.join(pdfDir, outputFileName);
-        const convertedFileName = file.originalname.replace(/\.[^/.]+$/, '') + '.pdf';
-        
+    // NEW: uid/email sent from the frontend's formData, used to
+    // attribute this conversion to the correct user.
+    const { uid, email } = req.body;
 
-        console.log(`Converting file: ${inputFilePath} to ${outputFilePath}`);
-        console.log(`Converted file name: ${convertedFileName}`);
-        await convertWithPythonConversion(inputFilePath, outputFilePath);
-        console.log(`Conversion completed: ${outputFilePath}`);
+    if (!file) return res.status(400).json({ error: 'No file uploaded.' });
 
-        // If the file does not exist, try to convert again once
-        if (!fs.existsSync(outputFilePath)) {
-            console.warn(`Output file does not exist after first attempt: ${outputFilePath}. Retrying conversion...`);
-            await convertWithPythonConversion(inputFilePath, outputFilePath);
-        }
+    const safeFilename = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const newFilePath  = path.join(file.destination, safeFilename);
+    fs.renameSync(file.path, newFilePath);
+    file.path = newFilePath;
 
-        if (!fs.existsSync(outputFilePath)) {
-            console.error(`Output file still does not exist: ${outputFilePath}`);
-            return res.status(500).send('Conversion failed.');
-        }
+    const libreOutputPath = path.join(
+      uploadDir,
+      path.basename(newFilePath).replace(/\.[^/.]+$/, '.pdf')
+    );
 
-        res.download(outputFilePath, convertedFileName, (err) => {
-            if (err) {
-                console.error(`Error downloading file: ${err}`);
-                return res.status(500).send('Failed to download file.');
-            }
-            console.log(`File downloaded successfully: ${outputFilePath}`);
-        });
-    } catch (error) {
-        console.error(`Unexpected error: ${error}`);
-        res.status(500).send('An unexpected error occurred.');
+    const randomSuffix   = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const outputFileName = `converteddocxtopdf-${randomSuffix}.pdf`;
+    const outputFilePath = path.join(uploadDir, outputFileName);
+
+    console.log(`[${intent}] Converting: ${newFilePath} → ${outputFilePath}`);
+
+    await convertWithLibreOffice(newFilePath, uploadDir);
+
+    if (!fs.existsSync(libreOutputPath)) {
+      return res.status(500).json({ error: 'Conversion failed — LibreOffice output missing.' });
     }
+    fs.renameSync(libreOutputPath, outputFilePath);
+
+    // NEW: log the conversion NOW - it succeeded, the file exists on
+    // disk, we're about to send it. If uid is missing (user somehow
+    // not logged in), skip logging rather than crash the response.
+    if (uid) {
+      await logConversion({
+        uid,
+        email,
+        originalName: file.originalname,
+        type: ConversionType.DOCX_TO_PDF,
+        filePath: outputFilePath,
+      });
+    } else {
+      console.warn('No uid provided - skipping conversion log for', file.originalname);
+    }
+
+    res.download(outputFilePath, outputFileName, (err) => {
+      if (err) console.error('Download error:', err);
+      // optionally clean up: fs.unlinkSync(outputFilePath);
+    });
+
+  } catch (error) {
+    console.error('convertWithLibreOffice12 error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
 };

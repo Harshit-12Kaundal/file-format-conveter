@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  uid         String   @unique
+  email       String
+  name        String   @default("")
+  age         Int?
+  gender      String   @default("")
+  bio         String   @default("")
+  avatarSeed  String?
+  avatarStyle String   @default("avataaars")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conversions     FileConversion[]
+  changes         ChangeEvent[]
+  sentRequests    FriendRequest[] @relation("sentFriendRequests")
+  receivedRequests FriendRequest[] @relation("receivedFriendRequests")
+  sentFileShares  FileShareNotification[] @relation("sentFileShares")
+  receivedFileShares FileShareNotification[] @relation("receivedFileShares")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+enum ConversionType {
+  PDF_TO_DOCX
+  DOCX_TO_PDF
+  MERGE_PDF
+  COMPRESS_PDF
+  ASK_AI
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model FriendRequest {
+  id          String               @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      FriendRequestStatus  @default(PENDING)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  requester User @relation("sentFriendRequests", fields: [requesterId], references: [id])
+  recipient User @relation("receivedFriendRequests", fields: [recipientId], references: [id])
+
+  @@unique([requesterId, recipientId])
+  @@index([recipientId, status])
+  @@index([requesterId, status])
+}
+
+model FileShareNotification {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  fileId      String
+  fileName    String
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("sentFileShares", fields: [senderId], references: [id])
+  recipient User @relation("receivedFileShares", fields: [recipientId], references: [id])
+
+  @@index([recipientId, createdAt])
+}
+
+model FileConversion {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  originalName String
+  type         ConversionType
+  status       String         @default("success")
+  filePath     String?
+  createdAt    DateTime       @default(now())
+
+  @@index([userId])
+}
+
+model ChangeEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  fileName  String
+  type      String
+  title     String
+  detail    String?
+  branch    String   @default("main")
+  createdAt DateTime @default(now())
+
+  @@index([userId, fileName])
+}

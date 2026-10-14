@@ -1,3 +1,4 @@
 /node_modules
 .env
 Config/ca.pem
+/generated/prisma
